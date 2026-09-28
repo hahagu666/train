@@ -13,7 +13,9 @@ data/user_media/
 data/embeddings_cache/
 data/app_settings.json
 data/user_profile.json
-# data/ 下的训练样例文件（train.jsonl、数据集案例.py 等）默认入库
+# data/ 下的训练样例文件（train.jsonl 等）默认入库
+# 数据集案例.py：中文GBK文件名与git UTF-8编码不兼容，无法入库，已忽略
+data/数据集案例.py
 logs/
 
 # ===== 工具配置 =====

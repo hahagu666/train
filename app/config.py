@@ -46,6 +46,9 @@ MAIN_MODEL_REPETITION_PENALTY = 1.15
 MAIN_MODEL_ATTENTION = "sdpa"
 MAIN_MODEL_USE_CACHE = True
 MAIN_MODEL_WARMUP = True
+# 预热目标 token 数：用接近生产长度的序列做一次 prefill，把一次性冷启动预填充
+# 成本从"首个用户回合"移到"模型加载阶段"，显著降低首回合延迟
+MAIN_MODEL_WARMUP_TOKENS = int(os.getenv("MAIN_MODEL_WARMUP_TOKENS", "1800"))
 MAIN_MODEL_GENERATION_TIMEOUT = float(os.getenv("MAIN_MODEL_GENERATION_TIMEOUT", "240"))
 # 拒绝方向消融：推理时从残差流中减去"拒绝方向"的投影，削弱基座对齐先验
 # 对编排指令的对抗（话题转移式推脱）。方向文件由 train/extract_refusal_direction.py 生成。

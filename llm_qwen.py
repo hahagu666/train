@@ -34,6 +34,7 @@ from app.config import (
     MAIN_MODEL_TOP_P,
     MAIN_MODEL_USE_CACHE,
     MAIN_MODEL_WARMUP,
+    MAIN_MODEL_WARMUP_TOKENS,
     REFUSAL_ABLATION,
     REFUSAL_ABLATION_ALPHA,
     REFUSAL_DIRECTION_FILE,
@@ -1216,20 +1217,45 @@ _supervisor = _ModelWorkerSupervisor()
 
 
 def _warmup_model() -> None:
-    """初始化量化 CUDA 内核，避免首个真实请求承担一次性编译成本。"""
+    """预热量化 CUDA 内核，并把一次性冷启动预填充成本移到加载阶段。
+
+    原实现只用 2 个 token（"你好"）预热，导致首个真实长序列请求（接近生产
+    的 ~2000 token）在首次生成时承担约 60-90s 的一次性 prefill 编译/初始化。
+    这里改用接近生产长度的序列预热，并追加一次短解码，使首回合延迟显著下降。
+    """
     if not MAIN_MODEL_WARMUP or not _model_loaded or _device != "cuda":
         return
     started = time.monotonic()
-    inputs = _tokenizer("你好", return_tensors="pt").to(_model.device)
-    with torch.no_grad():
-        _model.generate(
-            **inputs,
-            max_new_tokens=1,
-            do_sample=False,
-            use_cache=MAIN_MODEL_USE_CACHE,
-            pad_token_id=_tokenizer.pad_token_id or _tokenizer.eos_token_id,
-        )
-    debug("大模型", f"CUDA预热完成，耗时{time.monotonic()-started:.1f}s")
+    base = (
+        "今晚的风有点凉，你坐在窗边一言不发。我走到你身后，把外套披在你肩上，"
+        "你没有回头，只是停住了指尖。空气安静得能听见彼此的呼吸。我俯下身，"
+        "声音压得很低：如果你愿意，我们就这样慢慢来，好不好。"
+    )
+    target = max(1, MAIN_MODEL_WARMUP_TOKENS)
+    repeat = max(1, target * 2 // len(base) + 1)
+    sample = (base * repeat)[: target * 2]
+    try:
+        with torch.no_grad():
+            long_inputs = _tokenizer(sample, return_tensors="pt").to(_model.device)
+            _model.generate(
+                **long_inputs,
+                max_new_tokens=2,
+                do_sample=False,
+                use_cache=MAIN_MODEL_USE_CACHE,
+                pad_token_id=_tokenizer.pad_token_id or _tokenizer.eos_token_id,
+            )
+            short_inputs = _tokenizer("你好", return_tensors="pt").to(_model.device)
+            _model.generate(
+                **short_inputs,
+                max_new_tokens=4,
+                do_sample=False,
+                use_cache=MAIN_MODEL_USE_CACHE,
+                pad_token_id=_tokenizer.pad_token_id or _tokenizer.eos_token_id,
+            )
+    except Exception as exc:
+        warning("大模型", f"CUDA长序列预热失败: {exc}")
+        return
+    debug("大模型", f"CUDA预热完成（约{target}token），耗时{time.monotonic()-started:.1f}s")
 
 
 def load_model(device: str = None) -> bool:
