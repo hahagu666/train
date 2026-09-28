@@ -5,10 +5,15 @@ web/node_modules/
 # ===== 本地大模型（体积大，不纳入版本控制）=====
 models/
 
-# ===== 运行时/私有数据（会话、用户资料、向量缓存等）=====
-data/*
-!data/train.jsonl
-!data/数据集案例.py
+# ===== 运行时/私有数据（会话、用户资料、向量缓存等，不入库）=====
+data/sessions/
+data/characters/
+data/knowledge/
+data/user_media/
+data/embeddings_cache/
+data/app_settings.json
+data/user_profile.json
+# data/ 下的训练样例文件（train.jsonl、数据集案例.py 等）默认入库
 logs/
 
 # ===== 工具配置 =====
