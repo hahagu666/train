@@ -44,7 +44,8 @@ from app.generation_coordinator import (
     SessionGenerationBusyError,
 )
 from app.app_settings import AppSettingsManager
-import llm_qwen
+# 推理后端路由：llama(GGUF) 或 transformers，对外仍以 llm_qwen 名称调用
+from app import model_backend as llm_qwen
 import llm_small
 
 

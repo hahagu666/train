@@ -50,6 +50,24 @@ MAIN_MODEL_WARMUP = True
 # 成本从"首个用户回合"移到"模型加载阶段"，显著降低首回合延迟
 MAIN_MODEL_WARMUP_TOKENS = int(os.getenv("MAIN_MODEL_WARMUP_TOKENS", "1800"))
 MAIN_MODEL_GENERATION_TIMEOUT = float(os.getenv("MAIN_MODEL_GENERATION_TIMEOUT", "240"))
+
+# ===== 推理后端切换 =====
+# llama: 走 llama-server (GGUF, CUDA, 快数倍)；transformers: 走 bitsandbytes NF4
+MAIN_MODEL_BACKEND = os.getenv("MAIN_MODEL_BACKEND", "llama")
+# llama.cpp 二进制与 GGUF 路径（models/ 已被 .gitignore 排除，不入库）
+LLAMA_BIN_PATH = os.getenv(
+    "LLAMA_BIN_PATH",
+    os.path.join(PROJECT_ROOT, "models", "llama-cpp", "b2", "bin", "llama-server.exe"),
+)
+LLAMA_GGUF_PATH = os.getenv(
+    "LLAMA_GGUF_PATH",
+    os.path.join(PROJECT_ROOT, "models", "qwen2.5-7b-instruct-q4_k_m.gguf"),
+)
+LLAMA_SERVER_HOST = os.getenv("LLAMA_SERVER_HOST", "127.0.0.1")
+LLAMA_SERVER_PORT = int(os.getenv("LLAMA_SERVER_PORT", "8081"))
+LLAMA_CTX_TOKENS = int(os.getenv("LLAMA_CTX_TOKENS", "5120"))
+LLAMA_N_GPU = int(os.getenv("LLAMA_N_GPU", "999"))
+LLAMA_SERVER_TIMEOUT = float(os.getenv("LLAMA_SERVER_TIMEOUT", "180"))
 # 拒绝方向消融：推理时从残差流中减去"拒绝方向"的投影，削弱基座对齐先验
 # 对编排指令的对抗（话题转移式推脱）。方向文件由 train/extract_refusal_direction.py 生成。
 REFUSAL_ABLATION = os.getenv("REFUSAL_ABLATION", "1") == "1"

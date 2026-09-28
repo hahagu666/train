@@ -29,7 +29,8 @@ from core.serialization import serialize_state, deserialize_state
 from core.content_policy import evaluate_character
 from core.output_format import normalize_character_output
 from world.world_state import WorldState
-import llm_qwen
+# 推理后端路由：llama(GGUF) 或 transformers，对外仍以 llm_qwen 名称调用
+from app import model_backend as llm_qwen
 
 
 def _clean_assistant_response(text: str) -> str:
