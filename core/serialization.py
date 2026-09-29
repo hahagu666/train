@@ -16,7 +16,6 @@ from world.world_state import WorldState
 from world.time_system import GameTime
 from world.clothing import ClothingSystem
 from core.mind_state import MindState
-from core.memory import MemorySystem
 from core.orgasm import OrgasmSystem
 from core.ans import ANSState
 from core.sensitivity import SensitivityModulators
@@ -29,7 +28,6 @@ _STATE_DICT_FIELDS = {
     "body", "neural_potentials", "ans", "emotion", "orgasm",
     "sensitivity_mods", "novelty", "body_awareness", "partner", "mind",
     "clothing", "skills", "current_stimulation", "personality", "world",
-    "memory",
 }
 
 
@@ -89,7 +87,7 @@ def _serialize_neural_node(node: NeuralNode) -> dict:
 
 
 def serialize_state(state: CharacterState, world: WorldState = None,
-                   memory: MemorySystem = None) -> dict:
+                   memory: object = None) -> dict:
     """完整序列化state到可JSON化的dict"""
     # 技能
     skills_dict = {}
@@ -134,11 +132,6 @@ def serialize_state(state: CharacterState, world: WorldState = None,
         "conversation_history": state.conversation_history[-30:],
         "personality": dict(state.personality),
     }
-
-    if memory is None:
-        memory = getattr(state, "memory", None)
-    if memory:
-        data["memory"] = memory.to_dict()
 
     if world:
         data["world"] = world.to_dict()
@@ -191,7 +184,7 @@ def _deserialize_skill(data: dict) -> Skill:
     return s
 
 
-def deserialize_state(data: dict) -> Tuple[CharacterState, Optional[WorldState], Optional[MemorySystem]]:
+def deserialize_state(data: dict) -> Tuple[CharacterState, Optional[WorldState], None]:
     """从JSON dict反序列化，返回(state, world, memory)"""
     data = _migrate_state_payload(data)
     state = CharacterState()
@@ -285,23 +278,17 @@ def deserialize_state(data: dict) -> Tuple[CharacterState, Optional[WorldState],
         if event_data:
             world.events.load_from_dict(event_data, world=world)
 
-    # Memory
-    memory = None
-    if "memory" in data:
-        memory = MemorySystem.from_dict(data["memory"])
-        state.memory = memory
-
-    return state, world, memory
+    return state, world, None
 
 
-def save_game(state: CharacterState, world: WorldState, memory: MemorySystem, path: str):
+def save_game(state: CharacterState, world: WorldState, memory: object, path: str):
     """保存游戏到JSON文件"""
     data = serialize_state(state, world, memory)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-def load_game(path: str) -> Tuple[CharacterState, Optional[WorldState], Optional[MemorySystem]]:
+def load_game(path: str) -> Tuple[CharacterState, Optional[WorldState], None]:
     """从JSON文件加载游戏"""
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)

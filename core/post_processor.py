@@ -552,10 +552,4 @@ def apply_post_adjustments(adjustments: Dict, state, world=None):
     if adjustments.get("orgasm_signal") == "orgasm" and state.orgasm.phase == "plateau":
         state.global_arousal = max(state.global_arousal, state.orgasm.orgasm_threshold)
 
-    # hurt episode记录
-    hurt = adjustments.get("hurt_episode")
-    if hurt and hasattr(state, 'memory') and state.memory:
-        from .memory import record_hurt
-        record_hurt(state.memory, hurt["type"], hurt["intensity"], state.sim_time)
-
     return state

@@ -23,7 +23,6 @@ from .skills import default_skills, calc_effective_mastery, practice_skill, Nove
 from .orgasm import OrgasmSystem
 from .sensitivity import SensitivityModulators, effective_sensitivity
 from .mind_state import MindState
-from .memory import MemorySystem, record_orgasm_memory
 from world.clothing import ClothingSystem
 from core.physical_engine import StaminaState, configure_stamina, recover_stamina
 
@@ -95,8 +94,8 @@ class CharacterState:
         # === 衣物系统 ===
         self.clothing = ClothingSystem("summer_home")
 
-        # === 情感记忆系统 ===
-        self.memory = MemorySystem()
+        # === 情感记忆系统（core/memory 已移除，置空占位）===
+        self.memory = None
 
         # === 客观体力与疲劳 ===
         self.stamina = StaminaState()
@@ -321,10 +320,6 @@ class CharacterState:
         # 记忆标记（后面memory系统用）
         self._orgasm_just_happened = True
         self._last_orgasm_type = otype
-        # 记录高潮正面记忆
-        if self.memory:
-            record_orgasm_memory(self.memory, self.orgasm.intensity,
-                                self.sim_time, otype)
 
     def _on_orgasm_end(self):
         """高潮结束"""
@@ -649,11 +644,6 @@ class CharacterState:
             def g(name, default):
                 v = ep.get(name, default) if isinstance(ep, dict) else getattr(ep, name, default)
                 return v
-            if hasattr(self.memory, 'trust_gain_rate'):
-                self.memory.trust_gain_rate = g('trust_gain_rate', 1.0)
-                self.memory.trust_loss_rate = g('trust_loss_rate', 1.5)
-                self.memory.hurt_heal_rate = g('hurt_heal_rate', 0.8)
-
         # 初始穿着
         initial_outfit = getattr(character, 'initial_outfit', None)
         if initial_outfit is None and isinstance(character, dict):
