@@ -2,6 +2,11 @@
 venv/
 web/node_modules/
 
+# ===== 废弃前端（已移除，相关构建/审计产物不再入库）=====
+web/lighthouse*/
+web/lighthouse-report*/
+web/npm
+
 # ===== 本地大模型（体积大，不纳入版本控制）=====
 models/
 
