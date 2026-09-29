@@ -264,6 +264,7 @@ def _payload(messages, max_new_tokens, temperature, stream: bool):
         "max_tokens": max_new_tokens,
         "temperature": temperature,
         "top_p": 0.8,
+        "frequency_penalty": 0.3,
         "stream": stream,
     }
 

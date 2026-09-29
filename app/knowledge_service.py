@@ -663,6 +663,16 @@ class KnowledgeService:
             specificity = 0.85
             reasons.append("事件：" + "、".join(matched_events[:3]))
 
+        # 性事标志性事件（体位/偏好/敏感点/高潮）——让性交细节也能进入长期记忆
+        sexual_keywords = ["骑乘", "后入", "口交", "乳交", "69", "女上位", "侧躺",
+                          "最敏感", "敏感点", "最舒服", "最喜欢这样", "高潮", "内射"]
+        matched_sexual = [k for k in sexual_keywords if k in combined]
+        if matched_sexual and arousal > 0.4:
+            importance = max(importance, 0.55)
+            specificity = max(specificity, 0.8)
+            reasons.append("性事：" + "、".join(matched_sexual[:3]))
+
+
         disclosure_patterns = ["其实", "我告诉你", "秘密", "小时候", "害怕", "喜欢", "讨厌"]
         matched_disclosures = [pattern for pattern in disclosure_patterns if pattern in combined]
         if matched_disclosures:

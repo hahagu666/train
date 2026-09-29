@@ -5,6 +5,7 @@ import re
 _PROTOCOL_PREFIXES = ("<|assistant|>", "assistant:", "assistant：", "助手:", "助手：")
 _QUOTE_PAIRS = {"“": "”", '"': '"', "「": "」", "『": "』"}
 _CLOSING_QUOTES = set(_QUOTE_PAIRS.values())
+_ENGLISH_RUN = re.compile(r"[A-Za-z]+(?:[\s,.\-!?]+[A-Za-z]+){2,}")
 _ROLE_LABEL = re.compile(r'^(?:妹妹|姐姐|哥哥|角色|助手|assistant)[：:]\s*', re.IGNORECASE)
 
 
@@ -94,9 +95,13 @@ def _split_quoted_output(value: str) -> str:
     return "".join(parts).strip()
 
 
+def _strip_english_sentences(text: str) -> str:
+    return _ENGLISH_RUN.sub("", text or "").strip()
+
+
 def normalize_character_output(text: str) -> str:
     """Return an idempotent character output with dialogue/narration separation."""
-    value = _collapse_parentheses(_strip_speaker_label(_strip_protocol(text)))
+    value = _strip_english_sentences(_strip_speaker_label(_strip_protocol(text)))
     if not value:
         return ""
     value = _split_quoted_output(value)
