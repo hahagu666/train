@@ -61,7 +61,7 @@ LLAMA_BIN_PATH = os.getenv(
 )
 LLAMA_GGUF_PATH = os.getenv(
     "LLAMA_GGUF_PATH",
-    os.path.join(PROJECT_ROOT, "models", "qwen2.5-7b-instruct-q4_k_m.gguf"),
+    os.path.join(PROJECT_ROOT, "models", "qwen2.5-7b-instruct-abliterated-v2.Q4_K_M.gguf"),
 )
 LLAMA_SERVER_HOST = os.getenv("LLAMA_SERVER_HOST", "127.0.0.1")
 LLAMA_SERVER_PORT = int(os.getenv("LLAMA_SERVER_PORT", "8081"))
