@@ -68,6 +68,21 @@ LLAMA_SERVER_PORT = int(os.getenv("LLAMA_SERVER_PORT", "8081"))
 LLAMA_CTX_TOKENS = int(os.getenv("LLAMA_CTX_TOKENS", "5120"))
 LLAMA_N_GPU = int(os.getenv("LLAMA_N_GPU", "999"))
 LLAMA_SERVER_TIMEOUT = float(os.getenv("LLAMA_SERVER_TIMEOUT", "180"))
+
+# ===== 小模型后端（结构化提取/分类）=====
+# generate/classify/extract_structured 走 GGUF (llama.cpp)；embed 仍走 transformers(CPU)，保证 FAISS 向量空间不变。
+# 注意：本机 8GB 显卡不足以让两个 llama-server 并发上 GPU（会把 7B 拖垮 60 倍），
+# 故小模型强制 -ngl 0 全 CPU，7B 独享 GPU，避免显存争抢与泄漏。
+SMALL_LLAMA_BIN_PATH = os.getenv("SMALL_LLAMA_BIN_PATH", LLAMA_BIN_PATH)
+SMALL_LLAMA_GGUF_PATH = os.getenv(
+    "SMALL_LLAMA_GGUF_PATH",
+    os.path.join(PROJECT_ROOT, "models", "qwen2.5-1.5b-instruct-q4_k_m.gguf"),
+)
+SMALL_LLAMA_SERVER_HOST = os.getenv("SMALL_LLAMA_SERVER_HOST", "127.0.0.1")
+SMALL_LLAMA_SERVER_PORT = int(os.getenv("SMALL_LLAMA_SERVER_PORT", "8082"))
+SMALL_LLAMA_CTX_TOKENS = int(os.getenv("SMALL_LLAMA_CTX_TOKENS", "2048"))
+SMALL_LLAMA_N_GPU = int(os.getenv("SMALL_LLAMA_N_GPU", "0"))
+SMALL_LLAMA_SERVER_TIMEOUT = float(os.getenv("SMALL_LLAMA_SERVER_TIMEOUT", "120"))
 # 拒绝方向消融：推理时从残差流中减去"拒绝方向"的投影，削弱基座对齐先验
 # 对编排指令的对抗（话题转移式推脱）。方向文件由 train/extract_refusal_direction.py 生成。
 REFUSAL_ABLATION = os.getenv("REFUSAL_ABLATION", "1") == "1"

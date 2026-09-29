@@ -1,14 +1,14 @@
 """
-小模型适配器 - Qwen2.5-1.5B-Instruct（可选，按需加载到CPU）
+小模型适配器 - Qwen2.5-1.5B-Instruct
 用于：
   1. Post Processor: 从7B输出中提取结构化情绪/动作信号（替代正则）
   2. Scenario Engine: 智能选择下一个剧情卡/事件（分类任务）
+  3. Knowledge: 生成文本embedding（FAISS检索）
 
-特点：
-  - 默认不加载，模型路径不存在时所有函数安全降级为None（调用方自动用回正则/随机）
-  - 加载到CPU而非GPU，用完不主动卸载（CPU内存3GB，不影响GPU显存）
-  - 短文本任务（输入<1000字，输出<100字），CPU推理约200-500ms
-  - 模型下载好后放到 SMALL_MODEL_PATH 即可自动启用
+后端策略（提速且不影响逻辑）：
+  - generate / extract_structured / classify：优先走 GGUF (llama.cpp, GPU, 快)，不可用时回退 transformers CPU
+  - embed：固定走 transformers(CPU)（同一模型权重，向量空间不变，FAISS 索引兼容）
+  - 模型路径不存在时所有函数安全降级为None（调用方自动用回正则/随机）
 """
 import os
 import logging
@@ -18,6 +18,7 @@ os.environ["TRANSFORMERS_VERBOSITY"] = "error"
 logging.getLogger("transformers").setLevel(logging.ERROR)
 
 from app.logger import info, success, warning, error, debug
+import llm_small_gguf
 
 SMALL_MODEL_PATH = os.path.join(
     os.path.dirname(__file__), "models", "Qwen--Qwen2.5-1.5B-Instruct", "snapshots", "master"
@@ -81,7 +82,25 @@ def generate(prompt: str, system_prompt: str = "", max_new_tokens: int = 120,
              temperature: float = 0.3) -> str:
     """
     小模型生成（短文本任务）。
-    模型不可用时返回空字符串，调用方负责降级。
+    优先走 GGUF (llama.cpp GPU)；不可用时回退 transformers CPU。
+    模型均不可用时返回空字符串，调用方负责降级。
+    """
+    # GGUF 后端（GPU，快）
+    if llm_small_gguf.is_available():
+        out = llm_small_gguf.generate(prompt, system_prompt=system_prompt,
+                                      max_new_tokens=max_new_tokens, temperature=temperature)
+        if out:
+            debug("小模型", f"[gguf] 生成完成，{len(out)}字")
+            return out
+        debug("小模型", "[gguf] 无输出，回退 transformers CPU")
+    return _generate_cpu(prompt, system_prompt=system_prompt,
+                         max_new_tokens=max_new_tokens, temperature=temperature)
+
+
+def _generate_cpu(prompt: str, system_prompt: str = "", max_new_tokens: int = 120,
+                  temperature: float = 0.3) -> str:
+    """
+    transformers(CPU) 回退路径。模型不可用时返回空字符串，调用方负责降级。
     """
     model, tokenizer = _load()
     if model is None:
@@ -202,6 +221,7 @@ def unload():
     """主动卸载模型释放CPU内存（可选调用）"""
     global _model, _tokenizer, _available
     import gc
+    llm_small_gguf.unload()
     if _model is not None:
         info("小模型", "卸载模型释放内存...")
         del _model
