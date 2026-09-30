@@ -94,14 +94,29 @@ a{color:var(--accent);text-decoration:none}
 .status-badge--off>i{background:var(--off)}
 .msg-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-color:#cdbfdb transparent;scrollbar-width:thin}
 .msg-col{width:min(100%,860px);min-height:100%;margin:auto;padding:26px 22px}
-.msg{display:flex;align-items:flex-start;gap:9px;margin-bottom:18px}
+.msg{display:flex;align-items:flex-start;gap:11px;margin-bottom:16px;animation:msgIn .32s ease}
 .msg--mine{justify-content:flex-end}
-.msg__body{max-width:min(78%,640px)}
-.msg__meta{display:flex;justify-content:space-between;gap:16px;margin:0 3px 5px;color:var(--ink2);font-size:10.5px}
+.msg__avatar{flex:0 0 36px;width:36px;height:36px;display:grid;place-items:center;margin-top:2px;color:#fff;background:var(--grad);border-radius:50%;font-weight:700;font-size:14px;box-shadow:0 4px 10px rgba(157,123,216,.30)}
+.msg--mine .msg__avatar{display:none}
+.msg__body{max-width:min(76%,620px)}
+.msg__bubble{position:relative;padding:11px 15px;font-size:14px;line-height:1.72;white-space:pre-wrap;overflow-wrap:anywhere;background:linear-gradient(135deg,#fff,#fbf4fd);border:1px solid rgba(157,123,216,.15);border-radius:4px 18px 18px 18px;box-shadow:0 3px 12px rgba(124,96,180,.08)}
+.msg__bubble::before{content:"";position:absolute;left:-6px;top:10px;width:0;height:0;border-style:solid;border-width:0 8px 10px 0;border-color:transparent rgba(157,123,216,.15) transparent transparent}
+.msg__bubble::after{content:"";position:absolute;left:-4px;top:11px;width:0;height:0;border-style:solid;border-width:0 8px 10px 0;border-color:transparent #fbf4fd transparent transparent}
+.msg--mine .msg__bubble{background:linear-gradient(135deg,#b58ff0,#f09ad1);color:#fff;border-color:transparent;border-radius:18px 4px 18px 18px;box-shadow:0 6px 18px rgba(157,123,216,.32)}
+.msg--mine .msg__bubble::before,.msg--mine .msg__bubble::after{left:auto;right:-6px;border-width:0 0 10px 8px;border-color:transparent transparent transparent rgba(0,0,0,.10)}
+.msg--mine .msg__bubble::after{right:-4px;border-color:transparent transparent transparent #b58ff0}
+.msg__meta{display:flex;align-items:center;gap:7px;margin:4px 4px 0;color:var(--ink2);font-size:10.5px}
 .msg--mine .msg__meta{justify-content:flex-end}
-.msg__bubble{padding:11px 15px;font-size:14px;line-height:1.72;white-space:pre-wrap;overflow-wrap:anywhere;background:rgba(255,255,255,.86);border:1px solid var(--line);border-radius:6px 20px 20px 20px;box-shadow:var(--shadow)}
-.msg--mine .msg__bubble{background:var(--grad);color:#fff;border-color:transparent;border-radius:20px 6px 20px 20px;box-shadow:0 6px 18px rgba(157,123,216,.30)}
-.msg--pending{opacity:.85}
+.msg__meta .m-name{color:#8b7f92;font-weight:600}
+.msg--pending{opacity:.8}
+.day-divider{display:flex;align-items:center;gap:12px;margin:8px 0 22px;color:#b0a3be;font-size:11px;font-weight:600}
+.day-divider::before,.day-divider::after{content:"";flex:1;height:1px;background:var(--line-2)}
+.chat-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:60vh;color:var(--ink2);text-align:center;padding:0 22px}
+.chat-empty .ce-icon{display:grid;width:58px;height:58px;place-items:center;color:var(--accent);background:var(--grad-soft);border:1px dashed #d5c2ef;border-radius:20px}
+.chat-empty .ce-icon svg{width:26px;height:26px}
+.chat-empty strong{color:var(--ink);font-size:15px}
+.chat-empty p{font-size:12.5px;line-height:1.7}
+@keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .sys-msg,.inline-error{width:fit-content;max-width:82%;margin:12px auto;padding:6px 12px;color:var(--ink2);font-size:12px;line-height:1.5;text-align:center;background:rgba(255,255,255,.8);border-radius:10px}
 .inline-error{color:#b95774;background:#fdeef4}
 .typing{display:inline-flex;gap:4px;align-items:center;min-height:20px}
@@ -410,16 +425,27 @@ async function openSession(sid){
     loadCommands();startPoll(sid);renderChars();renderSessions();
   }catch(e){alert('加载会话失败：'+e.message);}
 }
+function dayKey(ts){const d=new Date(ts);return isNaN(d)?'':d.toDateString();}
+function dayLabel(key){const t=new Date(key);const now=new Date();const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());const y=new Date();y.setDate(now.getDate()-1);const yest=new Date(y.getFullYear(),y.getMonth(),y.getDate());const c=new Date(t.getFullYear(),t.getMonth(),t.getDate());
+  if(c.getTime()===today.getTime())return '今天';if(c.getTime()===yest.getTime())return '昨天';
+  return `${t.getFullYear()}年${t.getMonth()+1}月${t.getDate()}日`;}
+function fmtTime(ts){if(!ts)return '';const d=new Date(ts);return isNaN(d)?'':d.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});}
+function senderName(){return (S.active&&S.active.meta&&S.active.meta.character_name)||'她';}
 function renderMessages(msgs){
   const col=$('msgCol');
-  if(!msgs.length){col.innerHTML='<div class="state-empty">对话尚未开始，说点什么吧</div>';return;}
-  col.innerHTML=msgs.map(m=>{
-    if(m.role==='system'||m.role==='narrator')return `<div class="sys-msg">${esc(m.content)}</div>`;
+  const name=senderName();
+  if(!msgs.length){col.innerHTML='<div class="chat-empty"><div class="ce-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 20s-6.5-3.6-8-7.4C2.8 9.8 4.7 7 7.7 7c1.4 0 2.7.7 3.8 2.1l.5.6.5-.6C13.6 7.7 14.9 7 16.3 7c3 0 4.9 2.8 3.7 5.6-1.5 3.8-8 7.4-8 7.4z"/></svg></div><strong>和'+esc(name)+'说点什么</strong><p>你的每一句话，都会成为相处的回响</p></div>';return;}
+  let lastKey='',html='';
+  msgs.forEach(m=>{
+    if(m.role==='system'||m.role==='narrator'){html+=`<div class="sys-msg">${esc(m.content)}</div>`;return;}
     const mine=m.role==='user';
-    return `<div class="msg${mine?' msg--mine':''}"><div class="msg__body">
-      <div class="msg__meta"><span>${mine?'你':'她'}</span><span>${esc(m.timestamp||'')}</span></div>
-      <div class="msg__bubble">${esc(m.content)}</div></div></div>`;
-  }).join('');
+    const k=dayKey(m.timestamp||Date.now());
+    if(k&&k!==lastKey){html+=`<div class="day-divider"><span>${dayLabel(k)}</span></div>`;lastKey=k;}
+    const who=mine?'你':name;
+    const av=!mine?`<div class="msg__avatar">${esc(name.charAt(0))}</div>`:'';
+    html+=`<div class="msg${mine?' msg--mine':''}">${av}<div class="msg__body"><div class="msg__bubble">${esc(m.content)}</div><div class="msg__meta"><span class="m-name">${who}</span><span>${esc(fmtTime(m.timestamp))}</span></div></div></div>`;
+  });
+  col.innerHTML=html;
   $('msgScroll').scrollTop=$('msgScroll').scrollHeight;
 }
 
@@ -468,15 +494,15 @@ function stopPoll(){if(S.pollTimer){clearInterval(S.pollTimer);S.pollTimer=null;
 
 /* ================= 发送 ================= */
 function appendMsg(role,content,pending){
-  const col=$('msgCol'),mine=role==='user';
+  const col=$('msgCol'),mine=role==='user',name=senderName();
   const div=document.createElement('div');
   div.className='msg'+(mine?' msg--mine':'')+(pending?' msg--pending':'');
-  div.innerHTML=`<div class="msg__body"><div class="msg__meta"><span>${mine?'你':'她'}</span><span>${new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}</span></div>
-    <div class="msg__bubble">${esc(content)}</div></div>`;
+  const av=!mine?`<div class="msg__avatar">${esc(name.charAt(0))}</div>`:'';
+  div.innerHTML=`${av}<div class="msg__body"><div class="msg__bubble">${esc(content)}</div><div class="msg__meta"><span class="m-name">${mine?'你':name}</span><span>${fmtTime(Date.now())}</span></div></div>`;
   col.appendChild(div);$('msgScroll').scrollTop=$('msgScroll').scrollHeight;return div;
 }
-function showTyping(){const col=$('msgCol');const div=document.createElement('div');div.className='msg';div.id='typingRow';
-  div.innerHTML=`<div class="msg__body"><div class="msg__meta"><span>她</span></div><div class="msg__bubble"><span class="typing"><i></i><i></i><i></i></span></div></div>`;
+function showTyping(){const col=$('msgCol');const div=document.createElement('div');div.className='msg';div.id='typingRow';const name=senderName();
+  div.innerHTML=`<div class="msg__avatar">${esc(name.charAt(0))}</div><div class="msg__body"><div class="msg__bubble"><span class="typing"><i></i><i></i><i></i></span></div></div>`;
   col.appendChild(div);$('msgScroll').scrollTop=$('msgScroll').scrollHeight;}
 function removeTyping(){const t=$('typingRow');if(t)t.remove();}
 async function send(){

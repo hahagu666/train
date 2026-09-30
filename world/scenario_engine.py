@@ -67,6 +67,10 @@ class ScenarioCard:
         loc = explicit_loc or init.get("location") or "bedroom"
         w.set_location(loc)
         w.position_detail = self._infer_position_detail(loc)
+        # 用卡片显式地点作为中文显示名（如"妹妹房间"），避免通用"卧室"违和
+        label = self._card_location_label()
+        if label:
+            w.location_label = label
 
         # === 时间 ===
         time_hour = init.get("time_hour", self._infer_time_hour())
@@ -264,6 +268,16 @@ class ScenarioCard:
             return []
         return None
 
+
+    def _card_location_label(self) -> str:
+        """提取卡片显式地点的中文显示名（去掉时间/星期等），如'妹妹房间'。"""
+        import re as _re
+        if not self.location:
+            return ""
+        seg = self.location.split("，")[0].split(",")[0].strip()
+        seg = _re.sub(r"\d+[:：]?\d*", "", seg)
+        seg = _re.sub(r"(周一|周二|周三|周四|周五|周六|周日|星期[一二三四五六日]|早晨|早上|清晨|晚上|下午|中午|深夜|凌晨)", "", seg).strip()
+        return seg.strip("，。；、 ")
 
     def _infer_position_detail(self, loc: str) -> str:
         ctx = self.context

@@ -25,6 +25,7 @@ class WorldState:
 
     # 位置
     location_type: str = "bedroom"  # bedroom/bathroom/living_room/kitchen/outside/school
+    location_label: str = ""  # 中文显示名（剧情卡显式地点，如"妹妹房间"）；空则用类型映射
     privacy_level: float = 0.9
     lighting: str = "dark"  # bright/dim/dark/very_dark
     noise_level: float = 0.1
@@ -93,7 +94,7 @@ class WorldState:
 
     @property
     def location_name(self) -> str:
-        return self.LOCATION_NAMES.get(self.location_type, self.location_type)
+        return self.location_label or self.LOCATION_NAMES.get(self.location_type, self.location_type)
 
     @property
     def hour(self) -> int:
@@ -269,7 +270,14 @@ class WorldState:
             "outside": "在外面",
             "entrance": "在玄关门口",
         }
-        parts.append(loc_desc.get(self.location_type, f"在{self.location_type}"))
+        if self.location_label:
+            base = loc_desc.get(self.location_type)
+            if base and self.location_type == "bedroom":
+                parts.append(f"在{self.location_label}，{base.split('，', 1)[1]}")
+            else:
+                parts.append(f"在{self.location_label}")
+        else:
+            parts.append(loc_desc.get(self.location_type, f"在{self.location_type}"))
         # 人物
         if self.parents_present:
             parts.append("爸妈在家，可能听见动静")
@@ -307,7 +315,8 @@ class WorldState:
         return {
             "game_time": self.game_time.to_dict(),
             "weekday": self.weekday, "season": self.season, "is_raining": self.is_raining,
-            "location_type": self.location_type, "privacy_level": self.privacy_level,
+            "location_type": self.location_type, "location_label": self.location_label,
+            "privacy_level": self.privacy_level,
             "base_privacy_level": self.base_privacy_level,
             "lighting": self.lighting, "noise_level": self.noise_level,
             "temperature": self.temperature, "door_locked": self.door_locked,
