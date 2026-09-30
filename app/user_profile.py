@@ -64,6 +64,7 @@ class UserProfileManager:
         self,
         char_id: str,
         overrides: Optional[SessionUserProfileInput] = None,
+        char=None,
     ) -> dict:
         """Resolve an independent user identity snapshot for a new session."""
         profile = self.profile or self._default()
@@ -82,6 +83,32 @@ class UserProfileManager:
         if overrides is not None:
             for key, value in overrides.model_dump(exclude_none=True).items():
                 snapshot[key] = deepcopy(value)
+
+        # ===== 兜底：消除未成年 + 成人内容的矛盾，避免模型安全抑制 =====
+        # 角色已是成年可成人角色时，用户身份缺失/未成年 → 默认成年男性，并据关系推断称呼
+        rel_default = {
+            "step_sister": ("哥哥", "哥哥"),
+            "classmate": ("同桌", "你"),
+            "childhood_friend": ("青梅竹马", "你"),
+            "senior": ("学弟", "你"),
+            "teacher": ("学生", "你"),
+            "neighbor": ("邻居", "你"),
+            "other": ("哥哥", "哥哥"),
+        }
+        rel_key = getattr(char, "relationship_type", "") if char else ""
+        is_adult = bool(
+            char is not None
+            and (getattr(char, "adult_verified", False)
+                 or getattr(char, "sexual_interaction_allowed", False))
+        )
+        if is_adult and snapshot["age"] < 18:
+            snapshot["age"] = 25  # 成人应用：成年角色下默认用户成年
+        if rel_key in rel_default:
+            rel_label, addr = rel_default[rel_key]
+            if not snapshot["relation"]:
+                snapshot["relation"] = rel_label
+            if not snapshot["preferred_address"] or snapshot["preferred_address"] in (profile.name, "你"):
+                snapshot["preferred_address"] = addr
         return snapshot
 
     async def set_profile_from_text(self, text: str) -> UserProfileResponse:

@@ -112,6 +112,7 @@ class CharacterState:
                          action_type: str = "touch", through_clothes: bool = None):
         """对某个部位施加刺激（使用动态敏感度调制+衣物阻碍计算）"""
         debug("身体引擎", f"刺激注入: part={part_name}, intensity={intensity:.3f}, duration={duration:.2f}s, action={action_type}, 隔衣={through_clothes}")
+        raw_intensity = intensity  # 缩放前的动作原始强度（唤起基准用）
         # 计算衣物可接触度
         access = self.clothing.get_accessibility(part_name)
         friction = self.clothing.get_friction_mod(part_name)
@@ -189,6 +190,28 @@ class CharacterState:
         self.current_stimulation["current_action"] = action_type
         if part_name not in self.current_stimulation["current_targets"]:
             self.current_stimulation["current_targets"].append(part_name)
+
+        # === 性敏感部位刺激直接耦合 ANS 全局唤起 ===
+        # 原路径靠"部位arousal → 局部加权聚合 → ANS追踪"层层衰减，单次非生殖器
+        # 刺激（揉胸/吻脖/抚摸）几乎不抬全局唤起，模型永远看到 arousal≈0/平静而弱化输出。
+        # 此处以动作本身强度（intensity）为基准直接抬升 ANS 全局信号（衣物只打折、
+        # 敏感度/可接触度只影响局部触感不影响唤起基调），揉胸/抚摸一两轮即可到可感水平。
+        sex_sensitive = {
+            "clitoris": 0.25, "vaginal_canal": 0.25, "g_spot": 0.25,
+            "vaginal_vestibule": 0.22, "cervix": 0.20, "anus": 0.25,
+            "nipple_left": 0.14, "nipple_right": 0.14,
+            "breast_left": 0.10, "breast_right": 0.10,
+            "inner_labia": 0.22, "inner_thighs": 0.10,
+            "neck": 0.09, "ear": 0.09, "back": 0.07, "waist": 0.07,
+            "hip": 0.09, "shoulder": 0.06, "spine": 0.07,
+        }
+        if raw_intensity > 0.01 and part_name in sex_sensitive:
+            _gain = sex_sensitive[part_name]
+            if through_clothes:
+                _gain *= 0.55  # 隔衣刺激对唤起提升打折（仍保留质感）
+            _boost = raw_intensity * max(0.5, duration) * _gain
+            self.ans.arousal_global = min(1.0, self.ans.arousal_global + _boost)
+
         debug("身体引擎", f"刺激完成: part={part_name}, 实际强度={actual_intensity:.3f}, 敏感度={eff_sens:.2f}, arousal={self.global_arousal:.2f}, 阴蒂痛={clit_pain}")
         return clit_pain
 

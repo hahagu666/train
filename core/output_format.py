@@ -106,12 +106,55 @@ def _strip_english_sentences(text: str) -> str:
     return _ENGLISH_RUN.sub("", text or "").strip()
 
 
-def normalize_character_output(text: str) -> str:
+def _strip_echo(text: str, user_input: str = "") -> str:
+    """Remove model output that simply restates the user's own input (echo).
+
+    7B 模型在复杂前文下会把对方输入原样复述到回复开头或（ ）内（例如
+    “你小声说继续，我把你的内裤脱下来……”），违反“禁止复述对方动作”铁律。
+    这里剥离与当前输入一致的完整/前缀片段；模型复述时常把“你/我”视角对调
+    （“抚摸你”→“抚摸我”），故同时检测互换变体。不同写法的复述由 prompt 与
+    RECENT_COMPLETE_TURNS 共同抑制。
+    """
+    if not user_input:
+        return text
+    u = user_input.strip()
+    if len(u) < 4:
+        return text
+    value = text.strip()
+    if not value:
+        return ""
+    # 视角互换变体（模型复述常把“你/我”对调）
+    swapped = u.replace("你", "§§").replace("我", "你").replace("§§", "我")
+    variants = [u, u.rstrip("。"), swapped, swapped.rstrip("。"),
+                "（" + u, "（" + u.rstrip("。") + "）", "（" + u.rstrip("。"),
+                "（" + swapped, "（" + swapped.rstrip("。") + "）", "（" + swapped.rstrip("。"),
+                u + "。", swapped + "。"]
+    for v in variants:
+        if not v:
+            continue
+        value = value.replace(v, "")
+    value = re.sub(r"^[\s，。；,.、]+", "", value).strip()
+    # 开头前缀复述（模型先抄前半句再续写）；前缀也可能视角互换
+    for base in (u, swapped):
+        head = base[:20]
+        for cut in range(len(head), 4, -1):
+            prefix = head[:cut]
+            if value.startswith(prefix) or value.startswith("（" + prefix):
+                rest = value[len(prefix):] if value.startswith(prefix) else value[len(prefix) + 1:]
+                value = rest.lstrip("，。；,.、 ")
+                break
+    # 清理剥离后残留的空括号
+    value = re.sub(r"（\s*）", "", value).strip()
+    return value
+
+
+def normalize_character_output(text: str, user_input: str = "") -> str:
     """Return an idempotent character output with dialogue/narration separation."""
     debug("后处理", f"输出规范化开始: 长度={len(text)}字")
     value = _strip_english_sentences(_strip_speaker_label(_strip_protocol(text)))
     if not value:
         return ""
+    value = _strip_echo(value, user_input)
     value = _split_quoted_output(value)
     # A second mechanical pass makes mixed half/full-width input idempotent.
     value = _collapse_parentheses(value)

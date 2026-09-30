@@ -588,7 +588,8 @@ async def create_session(req: CreateSessionRequest):
     if not char_mgr or not char_mgr.get_character(req.character_id):
         raise HTTPException(404, "角色不存在")
     try:
-        session_profile = user_mgr.build_session_snapshot(req.character_id, req.user_profile)
+        char_obj = char_mgr.get_character(req.character_id) if char_mgr else None
+        session_profile = user_mgr.build_session_snapshot(req.character_id, req.user_profile, char=char_obj)
         inst = session_mgr.create_session(
             req.character_id,
             req.name,

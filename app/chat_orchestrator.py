@@ -33,9 +33,9 @@ from world.world_state import WorldState
 from app import model_backend as llm_qwen
 
 
-def _clean_assistant_response(text: str) -> str:
+def _clean_assistant_response(text: str, user_input: str = "") -> str:
     """Apply canonical character-output cleanup before commit."""
-    return normalize_character_output(text)
+    return normalize_character_output(text, user_input)
 
 
 def _data_block(title: str, value: object) -> str:
@@ -907,7 +907,7 @@ class ChatOrchestrator:
             yield cancelled_event()
             return
 
-        full_response = _clean_assistant_response(full_response)
+        full_response = _clean_assistant_response(full_response, user_input)
         try:
             t_post = time.time()
             action_types = [
