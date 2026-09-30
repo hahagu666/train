@@ -27,6 +27,13 @@ from world.clothing import ClothingSystem
 from core.physical_engine import StaminaState, configure_stamina, recover_stamina
 
 
+
+# === 日志补接线（详细排障） ===
+try:
+    from app.logger import debug, info, success, warning, error, trace
+except Exception:
+    debug = info = success = warning = error = trace = lambda *a, **k: None
+
 class CharacterState:
     """完整角色状态（原SisterState）"""
     def __init__(self):
@@ -104,6 +111,7 @@ class CharacterState:
     def apply_stimulation(self, part_name: str, intensity: float, duration: float = 1.0,
                          action_type: str = "touch", through_clothes: bool = None):
         """对某个部位施加刺激（使用动态敏感度调制+衣物阻碍计算）"""
+        debug("身体引擎", f"刺激注入: part={part_name}, intensity={intensity:.3f}, duration={duration:.2f}s, action={action_type}, 隔衣={through_clothes}")
         # 计算衣物可接触度
         access = self.clothing.get_accessibility(part_name)
         friction = self.clothing.get_friction_mod(part_name)
@@ -181,7 +189,7 @@ class CharacterState:
         self.current_stimulation["current_action"] = action_type
         if part_name not in self.current_stimulation["current_targets"]:
             self.current_stimulation["current_targets"].append(part_name)
-
+        debug("身体引擎", f"刺激完成: part={part_name}, 实际强度={actual_intensity:.3f}, 敏感度={eff_sens:.2f}, arousal={self.global_arousal:.2f}, 阴蒂痛={clit_pain}")
         return clit_pain
 
     def apply_cognitive_shock(self, shock_type: str):
@@ -200,6 +208,7 @@ class CharacterState:
     # === 时间推进（神经传播+状态更新）===
     def tick(self, dt: float = 0.8, world=None):
         """推进一个时间步（神经传播+所有系统更新）"""
+        debug("身体引擎", f"状态tick: dt={dt:.2f}s, sim_time={self.sim_time + dt:.1f}s, arousal={self.global_arousal:.3f}, 心率={self.ans.heart_rate}")
         if world is not None:
             self.set_world_privacy(world.get_privacy_level(self) if hasattr(world, "get_privacy_level") else world.privacy_level)
         self.sim_time += dt
@@ -325,6 +334,7 @@ class CharacterState:
 
     def _on_orgasm_start(self):
         """高潮开始时的状态变化"""
+        success("高潮", f"高潮开始: type={self.orgasm.orgasm_type}, intensity={self.orgasm.orgasm_intensity:.2f}")
         self.emotion.blend["pleasure"] = 1.0
         self.emotion.blend["overwhelm"] = min(1.0, self.emotion.blend.get("overwhelm", 0) + 0.8)
         self.emotion.blend["loss_of_control"] = min(1.0, self.emotion.blend.get("loss_of_control", 0) + 0.9)
@@ -348,6 +358,7 @@ class CharacterState:
 
     def _on_orgasm_end(self):
         """高潮结束"""
+        success("高潮", f"高潮结束: type={self.orgasm.orgasm_type}, 累计次数={self.orgasm.orgasms_so_far}")
         self.emotion.blend["satisfaction"] = 1.0
         self.emotion.blend["overwhelm"] *= 0.5
         self.emotion.blend["loss_of_control"] *= 0.3

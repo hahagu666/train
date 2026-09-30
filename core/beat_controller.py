@@ -12,6 +12,11 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Callable, Tuple
 
 
+# === 日志补接线（详细排障） ===
+try:
+    from app.logger import debug, info, success, warning, error, trace
+except Exception:
+    debug = info = success = warning = error = trace = lambda *a, **k: None
 @dataclass
 class Beat:
     """单个时间片"""
@@ -188,7 +193,7 @@ def select_pattern(action_type: str, duration: float, intensity: float,
     arousal = state.global_arousal
     orgasm_phase = state.orgasm.phase
     trust = state.relationship_trust
-
+    debug("身体引擎", f"选择节奏模式: action={action_type}, duration={duration:.1f}s, intensity={intensity:.2f}, arousal={arousal:.2f}, phase={orgasm_phase}")
     # 高潮中用高潮节奏
     if orgasm_phase == "orgasm":
         return _make_orgasm_beat(6.0 + state.orgasm.intensity * 6.0)
@@ -288,4 +293,5 @@ def apply_beat_stimulation(state, beat: Beat, target_parts: List[str],
                                    action_type, through_clothes=False)
 
     state.tick(beat_dt, world)
+    debug("身体引擎", f"Beat刺激完成: action={action_type}, 部位={target_parts}, 有效强度={eff_intensity:.2f}, dt={beat_dt:.1f}s, 高潮={state.orgasm.phase}")
     return state.orgasm.phase == "orgasm"  # 返回是否达到高潮（用于打断节奏）

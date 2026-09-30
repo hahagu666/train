@@ -29,6 +29,13 @@ SMALL_MODEL_INTERRUPTS = {
 }
 
 
+
+# === 日志补接线（详细排障） ===
+try:
+    from app.logger import debug, info, success, warning, error, trace
+except Exception:
+    debug = info = success = warning = error = trace = lambda *a, **k: None
+
 def _finite_number(value, minimum: float, maximum: float) -> bool:
     return (
         isinstance(value, (int, float))
@@ -337,6 +344,7 @@ def post_process(model_response: str, state, world=None,
     策略：优先用小模型结构化提取；小模型不可用/失败时降级为正则关键词匹配。
     """
     text = model_response
+    debug("后处理", f"后处理开始: 回复长度={len(text)}字, action={action_type}")
     adjustments = {
         "emotion_shift": {},
         "mind_shift": {},
@@ -478,6 +486,7 @@ def post_process(model_response: str, state, world=None,
     if not _allows_arousal_inference(action_type):
         _suppress_positive_intimate_inference(adjustments)
 
+    debug("后处理", f"后处理完成: 调整项={list(adjustments.keys()) if isinstance(adjustments, dict) else adjustments}")
     return adjustments
 
 

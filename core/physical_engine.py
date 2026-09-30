@@ -6,6 +6,11 @@ from dataclasses import dataclass
 from typing import Optional
 
 
+# === 日志补接线（详细排障） ===
+try:
+    from app.logger import debug, info, success, warning, error, trace
+except Exception:
+    debug = info = success = warning = error = trace = lambda *a, **k: None
 @dataclass
 class StaminaState:
     capacity: float = 100.0
@@ -86,6 +91,7 @@ def action_stamina_cost(action_type: str, duration: float, intensity: float = 0.
     rate = base_rates.get(action_type, 0.08)
     intensity_factor = max(0.5, min(1.8, 0.65 + float(intensity)))
     fatigue_factor = 1.0 + max(0.0, fatigue) * 0.8
+    debug("身体引擎", f"体力消耗计算: action={action_type}, duration={duration:.1f}s, intensity={intensity:.2f}, 姿势={posture_load:.2f}, 体型={body_factor:.2f}, 疲劳={fatigue:.2f} -> rate={rate:.2f}")
     return max(-duration * 0.2, duration * rate * intensity_factor * posture_load * body_factor * fatigue_factor)
 
 
@@ -94,6 +100,7 @@ def apply_stamina_delta(stamina: StaminaState, delta: float) -> None:
     if delta > 0:
         stamina.fatigue = min(1.0, stamina.fatigue + delta / max(stamina.capacity, 1.0) * 0.7)
         stamina.pain = min(1.0, stamina.pain + max(0.0, stamina.current <= stamina.exhaustion_threshold) * 0.02)
+        debug("身体引擎", f"体力变化: delta={delta:.2f}, 当前={stamina.current:.1f}/{stamina.capacity:.1f}, 疲劳={stamina.fatigue:.2f}")
 
 
 def recover_stamina(stamina: StaminaState, seconds: float, sleeping: bool = False) -> None:

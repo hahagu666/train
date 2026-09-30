@@ -274,6 +274,7 @@ def generate(prompt: str, system_prompt: str = "",
              temperature: float = MAIN_MODEL_TEMPERATURE,
              cancel_event: Optional[Event] = None,
              timeout: Optional[float] = 120.0) -> str:
+    debug("大模型", f"[llama] 完整生成调用: prompt={len(prompt)}字, max_tokens={max_new_tokens}, temperature={temperature}")
     if not is_loaded():
         if not load_model():
             raise RuntimeError(_last_load_error or "llama-server 未加载")
@@ -326,6 +327,7 @@ def generate(prompt: str, system_prompt: str = "",
         raise GenerationLengthLimitError(
             f"模型回复达到 {max_new_tokens} token 上限，未检测到自然结束"
         )
+    debug("大模型", f"[llama] 完整生成完成: {n_tokens} token, {elapsed:.1f}s, {n_tokens / elapsed:.1f} tok/s, stop={finish}")
     return content
 
 
@@ -334,6 +336,7 @@ async def generate_stream(prompt: str, system_prompt: str = "",
                           temperature: float = MAIN_MODEL_TEMPERATURE,
                           cancel_event: Optional[Event] = None,
                           timeout: float = 120.0) -> AsyncGenerator[str, None]:
+    debug("大模型", f"[llama] 流式生成调用: prompt={len(prompt)}字, max_tokens={max_new_tokens}, temperature={temperature}")
     if not is_loaded():
         if not load_model():
             yield "[模型未加载，请先下载模型]"
@@ -386,6 +389,7 @@ async def generate_stream(prompt: str, system_prompt: str = "",
         "tokens_per_second": round(token_count / elapsed, 2) if elapsed else 0.0,
         "stop_reason": "ok",
     })
+    debug("大模型", f"[llama] 流式生成完成: {token_count} token, {elapsed:.1f}s, {token_count / elapsed:.1f} tok/s")
 
 
 if __name__ == "__main__":

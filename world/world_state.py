@@ -10,6 +10,11 @@ from .events import EventEngine
 WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
 
+# === 日志补接线（详细排障） ===
+try:
+    from app.logger import debug, info, success, warning, error, trace
+except Exception:
+    debug = info = success = warning = error = trace = lambda *a, **k: None
 @dataclass
 class WorldState:
     # 时间 - 默认深夜23点，父母已睡，安全私密
@@ -140,6 +145,7 @@ class WorldState:
             "outside": ["traffic_distant", "wind"],
         }.get(loc, [])
         self._update_parents_presence()
+        debug("世界", f"位置变更: {loc}, 隐私={self.privacy_level:.2f}, 光线={self.lighting}, 危险={self.danger_level:.2f}")
 
     def set_scenario_people(self, people: List[str]):
         """Apply an explicit scenario roster and keep all presence flags aligned."""
@@ -209,6 +215,7 @@ class WorldState:
         if self.game_time.day != prev_day:
             self._advance_weekday(self.game_time.day - prev_day)
         self._update_parents_presence()
+        debug("世界", f"时间推进: {dt_seconds:.0f}s -> {self.game_time.get_time_str()}, 位置={self.location_type}")
 
     def _advance_weekday(self, days: int):
         """天数推进时同步星期，否则周末判断永远停留在初始化值。"""

@@ -146,6 +146,11 @@ BODY_AWARENESS = {
 
 # ============ 生成器 ============
 
+# === 日志补接线（详细排障） ===
+try:
+    from app.logger import debug, info, success, warning, error, trace
+except Exception:
+    debug = info = success = warning = error = trace = lambda *a, **k: None
 @dataclass
 class SensationReport:
     """一次beat/动作后的感受报告"""
@@ -227,6 +232,7 @@ class SensationGenerator:
         """根据当前状态生成感受报告"""
         report = SensationReport()
         arousal = state.global_arousal
+        debug("感官", f"感官生成开始: action={action_type}, 目标={target_parts}, arousal={arousal:.2f}, phase={state.orgasm.phase}")
         ans = state.ans
         emotion = state.emotion
         mind = state.mind
@@ -510,4 +516,5 @@ class SensationGenerator:
                 break
         # 一句话摘要
         report.summary = state.get_state_summary()
+        debug("感官", f"感官报告完成: 触感{len(report.touch or [])}条, 温度{len(report.temperature or [])}条, 快感{len(report.pleasure or [])}条")
         return report

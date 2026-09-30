@@ -12,6 +12,11 @@ from typing import Dict, List, Optional, Tuple
 import math
 
 
+# === 日志补接线（详细排障） ===
+try:
+    from app.logger import debug, info, success, warning, error, trace
+except Exception:
+    debug = info = success = warning = error = trace = lambda *a, **k: None
 @dataclass
 class MindState:
     # === 情境解读 ===
@@ -131,6 +136,7 @@ class MindState:
         self._update_immersion(arousal, pleasure, ans, state, dt)
 
         self.last_update_time = state.sim_time
+        debug("情绪", f"意愿状态更新: dominant={self.get_dominant_state()}, resistance={self.active_resistance_will:.2f}, refusal={self.refusal_sincerity:.2f}, hesitation={self.hesitation:.2f}, acceptance={self.acceptance_level:.2f}")
 
     def _update_context_interpretation(self, action_type: str, arousal: float,
                                         trust: float, shame: float, fear: float,

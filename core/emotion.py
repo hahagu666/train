@@ -9,6 +9,11 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Tuple
 
 
+# === 日志补接线（详细排障） ===
+try:
+    from app.logger import debug, info, success, warning, error, trace
+except Exception:
+    debug = info = success = warning = error = trace = lambda *a, **k: None
 @dataclass
 class EmotionState:
     primary: str = "calm"
@@ -151,6 +156,7 @@ class EmotionState:
 
     def trigger_interrupt(self, interrupt_type: str, current_time: float = 0.0):
         """情绪冲击中断 - 身体还在反应但意识被打断"""
+        warning("事件", f"情绪冲击: type={interrupt_type}, 时间={current_time:.1f}s")
         self.interrupt_triggered = True
         self.interrupt_type = interrupt_type
         self.last_interrupt_time = current_time

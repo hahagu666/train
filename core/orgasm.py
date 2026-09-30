@@ -7,6 +7,11 @@ from dataclasses import dataclass, field
 from typing import Dict, Optional
 
 
+# === 日志补接线（详细排障） ===
+try:
+    from app.logger import debug, info, success, warning, error, trace
+except Exception:
+    debug = info = success = warning = error = trace = lambda *a, **k: None
 @dataclass
 class OrgasmSystem:
     # 平台期阈值
@@ -161,7 +166,7 @@ class OrgasmSystem:
         返回: 事件字符串（如 "orgasm_start"/None）
         """
         event = None
-
+        debug("高潮", f"高潮系统更新: phase={self.phase}, arousal={global_arousal:.3f}, 平台计时={self.plateau_timer:.2f}/{self.plateau_duration_required:.2f}, 阈值={self.orgasm_threshold:.2f}")
         # === 高潮中 ===
         if self.phase == "orgasm":
             self.orgasm_duration += dt
@@ -209,6 +214,7 @@ class OrgasmSystem:
                 self.orgasm_duration = 0.0
                 self.orgasms_so_far += 1
                 self._init_contraction_wave(self.orgasm_intensity)
+                success("高潮", f"触发高潮! type={self.orgasm_type}, intensity={self.orgasm_intensity:.2f}, 累计次数={self.orgasms_so_far}")
                 event = "orgasm_start"
 
         return event

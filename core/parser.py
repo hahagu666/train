@@ -13,6 +13,12 @@ from typing import List, Dict, Tuple, Optional, Any
 from dataclasses import dataclass, field
 
 
+# === 日志补接线（详细排障） ===
+try:
+    from app.logger import debug, info, success, warning, error, trace
+except Exception:
+    debug = info = success = warning = error = trace = lambda *a, **k: None
+
 @dataclass
 class ParsedAction:
     """解析后的单个动作"""
@@ -472,6 +478,7 @@ def parse_input(user_text: str, state=None, world=None) -> List[ParsedAction]:
 
     if parsed_clause_actions:
         actions.extend(parsed_clause_actions)
+        debug("解析器", f"分句解析命中: 动作数={len(parsed_clause_actions)}, 类型=[{', '.join(a.action_type for a in parsed_clause_actions)}]")
         return actions
 
     if not actions:
@@ -488,6 +495,7 @@ def parse_input(user_text: str, state=None, world=None) -> List[ParsedAction]:
             actions.append(ParsedAction(action_type="talk", verbal=text, source_text=text))
         else:
             actions.append(ParsedAction(action_type="wait", source_text=text))
+    debug("解析器", f"parse_input完成: 动作数={len(actions)}, 类型=[{', '.join(a.action_type for a in actions)}]")
     return actions
 
 

@@ -509,6 +509,8 @@ class KnowledgeService:
     # --- 添加记忆 ---
     def add_memory(self, item: MemoryItem, save: bool = True):
         """Add a canonical memory unless the same active fact already exists."""
+        debug("记忆", f"写入记忆: layer={item.layer}, type={item.memory_type}, char={item.associated_char_id}, session={item.associated_session_id}, 内容={item.content[:30]}")
+
         layer = self._get_or_create_layer(
             item.layer,
             item.associated_char_id,

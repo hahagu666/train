@@ -10,6 +10,11 @@ ELIGIBILITY_VERSION = 2
 MIN_ADULT_AGE = 18
 
 
+# === 日志补接线（详细排障） ===
+try:
+    from app.logger import debug, info, success, warning, error, trace
+except Exception:
+    debug = info = success = warning = error = trace = lambda *a, **k: None
 @dataclass(frozen=True)
 class EligibilityDecision:
     allowed: bool
@@ -48,11 +53,13 @@ def evaluate_character(character) -> EligibilityDecision:
             getattr(character, "relationship_type", ""),
         )
     )
-    return evaluate_adult_eligibility(
+    decision = evaluate_adult_eligibility(
         getattr(character, "age", None),
         bool(getattr(character, "adult_verified", False)),
         identity_text,
     )
+    debug("角色", f"成人资格判定: {decision.code}, allowed={decision.allowed}, reason={decision.reason}")
+    return decision
 
 
 def refresh_character_eligibility(character) -> EligibilityDecision:

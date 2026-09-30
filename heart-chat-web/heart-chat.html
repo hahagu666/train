@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heart Chat · 心跳相册</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23b58ff0'/%3E%3Cstop offset='1' stop-color='%23f09ad1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='24' height='24' rx='7' fill='url(%23g)'/%3E%3Cpath d='M12 18c-4-2.6-6.2-5-6.2-7.4C5.8 8.6 7 7.4 8.7 7.4c1.2 0 2.3.7 3.3 2 .9-1.3 2-2 3.3-2 1.7 0 2.9 1.2 2.9 3.2 0 2.4-2.2 4.8-6.2 7.4z' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f6f1f9; --bg-2:#efe8f6;
+  --panel:rgba(255,255,255,.74); --panel-2:#f8f3fb; --ink:#3a3440; --ink2:#8b7f92;
+  --line:rgba(157,123,216,.16); --line-2:rgba(157,123,216,.11);
+  --accent:#9d7bd8; --accent-s:#7e5fc0; --accent-soft:#efe8fb; --accent-softer:#f6f1fd;
+  --grad:linear-gradient(135deg,#b58ff0,#f09ad1); --grad-soft:linear-gradient(135deg,#efe6fb,#fdeef7);
+  --warm:#e39a6c; --ok:#6bbf9b; --busy:#d0a24e; --off:#d97b9b;
+  --shadow:0 4px 20px rgba(124,96,180,.10); --shadow-lg:0 24px 50px rgba(80,55,140,.18);
+  --serif:"Georgia","Songti SC","SimSun",serif; --sans:Inter,"Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{width:100%;height:100%;margin:0;overflow:hidden;color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+body{background:radial-gradient(1200px 800px at 12% -8%,#fdf4ff 0,rgba(0,0,0,0) 60%),radial-gradient(1100px 700px at 108% 8%,#f3ecfb 0,rgba(0,0,0,0) 55%),var(--bg)}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid #b088e8;outline-offset:2px}
+h1,h2,h3,p{margin:0}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+a{color:var(--accent);text-decoration:none}
+
+/* ===== 壳 ===== */
+.app-shell{display:grid;grid-template-columns:300px minmax(0,1fr) 340px;width:100%;height:100dvh;min-height:560px;overflow:hidden;background:transparent}
+.pane{min-width:0;min-height:0;display:flex;flex-direction:column}
+.char-pane,.state-pane{background:var(--panel);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);z-index:20}
+.char-pane{border-right:1px solid var(--line)}
+.state-pane{border-left:1px solid var(--line)}
+.chat-pane{background:transparent}
+.brand-row,.chat-header,.state-head{flex:0 0 72px;min-height:72px;border-bottom:1px solid var(--line)}
+.brand-row{display:flex;align-items:center;justify-content:space-between;padding:0 18px}
+.brand{display:flex;align-items:center;gap:11px}
+.brand-mark{display:grid;width:40px;height:40px;place-items:center;color:#fff;background:var(--grad);border-radius:15px;box-shadow:0 8px 18px rgba(157,123,216,.35)}
+.brand-mark svg{width:21px;height:21px}
+.brand h1{font-family:var(--serif);font-size:19px;letter-spacing:.02em}
+.brand small{display:block;margin-top:1px;color:var(--ink2);font-size:11px}
+.brand-actions{display:flex;gap:2px}
+.icon-btn{display:grid;width:34px;height:34px;place-items:center;color:var(--ink2);border-radius:12px;background:transparent}
+.icon-btn:hover{background:var(--accent-softer);color:var(--accent)}
+.icon-btn svg{width:18px;height:18px}
+
+/* ===== 左栏 ===== */
+.char-scroll{flex:1;min-height:0;overflow-y:auto;scrollbar-color:#cdbfdb transparent;scrollbar-width:thin}
+.search-box{display:flex;flex:0 0 38px;align-items:center;gap:8px;margin:13px 13px 4px;padding:0 13px;color:var(--ink2);background:rgba(255,255,255,.8);border:1px solid var(--line);border-radius:14px}
+.search-box:focus-within{border-color:#c5a6ef;box-shadow:0 0 0 3px rgba(157,123,216,.12)}
+.search-box input{width:100%;min-width:0;color:var(--ink);background:transparent;outline:0;border:0}
+.new-chat{margin:10px 13px;padding:9px 12px;display:flex;align-items:center;gap:8px;color:var(--accent);font-size:12.5px;font-weight:650;background:var(--accent-softer);border:1px solid #e6d9f7;border-radius:13px}
+.new-chat:hover{background:var(--accent-soft)}
+.new-chat svg{width:15px;height:15px}
+.sec-label{padding:16px 18px 6px;color:#b0a3be;font-size:10.5px;font-weight:700;letter-spacing:.14em}
+.character-list,.session-list{padding:0 10px 12px}
+.char-item{margin-bottom:10px;overflow:hidden;border:1px solid transparent;border-radius:20px;transition:transform .15s}
+.char-item:hover{transform:translateY(-2px)}
+.char-item.is-active{background:#fff;border-color:#d5c2ef}
+.char-main{display:flex;align-items:center;width:100%;min-height:70px;padding:9px 9px 9px 12px;text-align:left;background:transparent}
+.char-main:hover{background:rgba(255,255,255,.6)}
+.avatar{display:inline-grid;flex:0 0 48px;width:48px;height:48px;overflow:hidden;place-items:center;color:#fff;background:var(--grad);border-radius:18px;font-weight:700;font-size:17px;object-fit:cover;box-shadow:0 5px 12px rgba(157,123,216,.28)}
+.avatar--sm{width:36px;height:36px;font-size:13px;border-radius:13px}
+.avatar--lg{width:92px;height:92px;font-size:28px;border-radius:30px;box-shadow:0 12px 28px rgba(157,123,216,.34)}
+.char-copy{flex:1;min-width:0;margin-left:12px}
+.char-copy strong{display:block;overflow:hidden;font-size:14.5px;text-overflow:ellipsis;white-space:nowrap}
+.char-copy small,.char-copy span{display:block;overflow:hidden;margin-top:3px;color:var(--ink2);font-size:11px;text-overflow:ellipsis;white-space:nowrap}
+.session-row{display:flex;align-items:stretch;margin-top:5px}
+.session-choice{flex:1;min-width:0;padding:9px 10px;color:#6f6477;text-align:left;background:transparent;border-left:2px solid #e3d8ee}
+.session-choice>span{display:flex;flex-direction:column;gap:3px;min-width:0}
+.session-choice strong{display:block;overflow:hidden;font-size:13px;text-overflow:ellipsis;white-space:nowrap}
+.session-choice small{color:var(--ink2);font-size:10.5px}
+.session-choice.is-current,.session-choice:hover{color:var(--ink);background:#fff;border-left-color:var(--accent)}
+.del-btn{display:grid;width:30px;place-items:center;color:#b3a6bf}
+.del-btn:hover{color:var(--off);background:#fbe9f1}
+.history-empty{padding:10px 18px;color:#a79bb3;font-size:12px}
+.empty-create{margin:12px 10px;padding:22px 16px;text-align:center;background:var(--grad-soft);border:1px dashed #d5c2ef;border-radius:22px}
+.empty-create svg{width:26px;height:26px;color:var(--accent)}
+.empty-create p{margin-top:8px;color:var(--ink2);font-size:12.5px;line-height:1.7}
+.empty-create button{margin-top:12px;padding:8px 16px;color:#fff;font-weight:700;background:var(--grad);border-radius:20px;box-shadow:0 6px 14px rgba(157,123,216,.32)}
+.empty-create button:hover{filter:brightness(.97)}
+
+/* ===== 中栏 ===== */
+.chat-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 22px;background:rgba(255,255,255,.55);backdrop-filter:blur(14px)}
+.chat-id{min-width:0}
+.chat-id h2{overflow:hidden;font-size:16px;font-weight:700;text-overflow:ellipsis;white-space:nowrap}
+.chat-id p{overflow:hidden;margin-top:3px;color:var(--ink2);font-size:12px;text-overflow:ellipsis;white-space:nowrap}
+.header-status{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.status-badge{display:inline-flex;align-items:center;gap:6px;color:var(--ink2);font-size:12px;white-space:nowrap}
+.status-badge>i{width:8px;height:8px;background:#b3a6bf;border-radius:50%}
+.status-badge--ready>i{background:var(--ok)}
+.status-badge--busy>i{background:var(--busy)}
+.status-badge--off>i{background:var(--off)}
+.msg-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-color:#cdbfdb transparent;scrollbar-width:thin}
+.msg-col{width:min(100%,860px);min-height:100%;margin:auto;padding:26px 22px}
+.msg{display:flex;align-items:flex-start;gap:9px;margin-bottom:18px}
+.msg--mine{justify-content:flex-end}
+.msg__body{max-width:min(78%,640px)}
+.msg__meta{display:flex;justify-content:space-between;gap:16px;margin:0 3px 5px;color:var(--ink2);font-size:10.5px}
+.msg--mine .msg__meta{justify-content:flex-end}
+.msg__bubble{padding:11px 15px;font-size:14px;line-height:1.72;white-space:pre-wrap;overflow-wrap:anywhere;background:rgba(255,255,255,.86);border:1px solid var(--line);border-radius:6px 20px 20px 20px;box-shadow:var(--shadow)}
+.msg--mine .msg__bubble{background:var(--grad);color:#fff;border-color:transparent;border-radius:20px 6px 20px 20px;box-shadow:0 6px 18px rgba(157,123,216,.30)}
+.msg--pending{opacity:.85}
+.sys-msg,.inline-error{width:fit-content;max-width:82%;margin:12px auto;padding:6px 12px;color:var(--ink2);font-size:12px;line-height:1.5;text-align:center;background:rgba(255,255,255,.8);border-radius:10px}
+.inline-error{color:#b95774;background:#fdeef4}
+.typing{display:inline-flex;gap:4px;align-items:center;min-height:20px}
+.typing i{width:5px;height:5px;background:#b3a6bf;border-radius:50%;animation:typing 1.1s infinite ease-in-out}
+.typing i:nth-child(2){animation-delay:.14s}
+.typing i:nth-child(3){animation-delay:.28s}
+@keyframes typing{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-3px);opacity:1}}
+.composer{flex:0 0 auto;padding:12px 22px 10px;background:rgba(255,255,255,.6);backdrop-filter:blur(14px);border-top:1px solid var(--line)}
+.composer__box{display:flex;align-items:flex-end;gap:8px;max-width:860px;margin:auto;padding:7px;background:rgba(255,255,255,.9);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow)}
+.composer__box:focus-within{border-color:#c5a6ef;box-shadow:0 0 0 4px rgba(157,123,216,.13)}
+.composer textarea{width:100%;min-height:30px;max-height:132px;padding:5px;color:var(--ink);line-height:1.5;resize:none;background:transparent;outline:0;border:0}
+.send-btn,.cmd-btn{display:grid;flex:0 0 38px;width:38px;height:38px;padding:0;place-items:center;border-radius:14px}
+.send-btn{color:#fff;background:var(--grad)}
+.send-btn:hover:not(:disabled){filter:brightness(.96)}
+.send-btn:disabled{color:#c4b8ce;background:#eee8f3}
+.cmd-btn{color:var(--accent);background:var(--accent-softer)}
+.cmd-btn:hover{background:var(--accent-soft)}
+.cmd-btn svg{width:18px;height:18px}
+.composer__hint{display:flex;justify-content:space-between;max-width:860px;margin:6px auto 0;color:var(--ink2);font-size:11px}
+.cmd-panel{position:absolute;right:22px;bottom:94px;z-index:4;width:min(400px,calc(100% - 44px));max-height:320px;overflow-y:auto;padding:8px;background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow-lg);backdrop-filter:blur(16px)}
+.cmd-panel__head{display:flex;align-items:center;justify-content:space-between;padding:5px 8px 9px}
+.cmd-group{padding:3px 0 7px}
+.cmd-group+.cmd-group{border-top:1px solid var(--line-2)}
+.cmd-group h3{padding:7px 8px 4px;color:var(--accent);font-size:11px;letter-spacing:.08em}
+.cmd-group>button{display:flex;flex-direction:column;gap:3px;width:100%;padding:9px;text-align:left;background:transparent;border-radius:12px}
+.cmd-group>button:hover{background:var(--accent-softer)}
+.cmd-group span,.cmd-group p{color:#8a7f95;font-size:12px}
+.cmd-empty{display:flex;align-items:center;justify-content:center;min-height:76px;padding:14px;color:var(--ink2);font-size:12px;text-align:center}
+
+/* ===== 右栏 ===== */
+.state-head{display:flex;align-items:center;justify-content:space-between;padding:0 18px}
+.state-head h2{font-size:14px;font-weight:700}
+.state-head .stage-chip{padding:3px 10px;color:#8a6ac9;font-size:11px;background:var(--accent-soft);border-radius:20px}
+.state-scroll{flex:1;min-height:0;overflow-y:auto;padding:16px;scrollbar-color:#cdbfdb transparent;scrollbar-width:thin}
+.state-section{padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid var(--line-2)}
+.state-section:last-child{border-bottom:0;margin-bottom:0}
+.section-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;color:#382f3f;font-size:13px;font-weight:700}
+.gauge-wrap{display:flex;align-items:center;gap:14px}
+.gauge{position:relative;width:118px;height:118px;flex:0 0 118px}
+.gauge svg{transform:rotate(-90deg)}
+.gauge .g-num{position:absolute;inset:0;display:grid;place-items:center;flex-direction:column}
+.gauge .g-num strong{font-size:26px;font-family:var(--serif);line-height:1}
+.gauge .g-num small{color:var(--ink2);font-size:10px;margin-top:2px}
+.gauge-legend{flex:1;min-width:0}
+.gauge-legend p{color:var(--ink2);font-size:11.5px;line-height:1.6}
+.metric{margin-bottom:12px}
+.metric__label{display:flex;justify-content:space-between;margin-bottom:6px;color:var(--ink2);font-size:11.5px}
+.metric__label b{color:var(--ink);font-weight:700}
+.metric__track{height:8px;overflow:hidden;background:#ece4f3;border-radius:6px}
+.metric__fill{display:block;height:100%;background:var(--grad);border-radius:6px;transition:width .5s ease}
+.metric__fill--warm{background:linear-gradient(90deg,#e39a6c,#f0bd8f)}
+.metric__fill--ok{background:linear-gradient(90deg,#6bbf9b,#93d6b5)}
+.vitals{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.vitals>div{min-width:0;padding:10px;background:rgba(255,255,255,.7);border:1px solid var(--line-2);border-radius:16px}
+.vitals span,.vitals small{color:#94879e;font-size:10.5px}
+.vitals strong{margin:0 4px 0 7px;font-size:19px;font-family:var(--serif)}
+.vitals__text{display:block;overflow:hidden;margin:4px 0 0;color:#94879e;font-size:12px;text-overflow:ellipsis;white-space:nowrap}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{padding:5px 12px;color:#7a6a88;font-size:11.5px;background:var(--accent-softer);border-radius:20px}
+.chip--hot{color:#b95774;background:#fdeef4}
+.dl{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;padding:8px 0;font-size:12.5px;border-bottom:1px dashed #e4daf0}
+.dl:last-child{border-bottom:0}
+.dl dt{color:#94879e}
+.dl dd{margin:0;overflow-wrap:anywhere}
+.state-empty{display:flex;align-items:center;justify-content:center;min-height:180px;padding:24px;color:var(--ink2);text-align:center}
+
+/* ===== 欢迎 / 新建会话 ===== */
+.welcome{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:24px;background:radial-gradient(1000px 700px at 30% 20%,#fdf2ff 0,rgba(0,0,0,0) 60%),radial-gradient(900px 600px at 80% 80%,#f1eafc 0,rgba(0,0,0,0) 55%),var(--bg);overflow-y:auto}
+.welcome-card{width:min(560px,100%);max-height:92dvh;overflow-y:auto;padding:34px 36px;background:rgba(255,255,255,.9);border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow-lg);backdrop-filter:blur(20px)}
+.eyebrow{color:var(--accent);font-size:11px;font-weight:750;letter-spacing:.16em}
+.welcome-card h2{margin-top:10px;font-family:var(--serif);font-size:30px;line-height:1.2}
+.welcome-card>p{margin-top:12px;color:var(--ink2);font-size:13px;line-height:1.8}
+.welcome-card label{display:flex;flex-direction:column;gap:7px;margin-top:20px;color:#5b5063;font-size:12.5px;font-weight:650}
+.welcome-card input,.welcome-card select,.welcome-card textarea{width:100%;padding:11px 13px;color:var(--ink);background:#fff;border:1px solid #e2d7ef;border-radius:14px;outline:0}
+.welcome-card input:focus,.welcome-card select:focus,.welcome-card textarea:focus{border-color:#c5a6ef;box-shadow:0 0 0 3px rgba(157,123,216,.12)}
+fieldset{border:0;margin:20px 0 0;padding:0}
+legend{margin-bottom:9px;color:#5b5063;font-size:12.5px;font-weight:650}
+.scenario-opt{display:flex;align-items:flex-start;gap:10px;width:100%;padding:12px;margin-bottom:8px;text-align:left;background:#fff;border:1px solid #e8ddf4;border-radius:16px}
+.scenario-opt.is-sel{background:var(--accent-softer);border-color:#c5a6ef}
+.scenario-opt input{width:auto;margin-top:3px}
+.scenario-opt span{display:flex;flex-direction:column;gap:3px}
+.scenario-opt small{color:#94879e;font-size:11px}
+.range-row{display:flex;align-items:center;gap:12px}
+.range-row input[type=range]{flex:1;accent-color:var(--accent)}
+.range-row output{min-width:44px;text-align:right;color:var(--accent);font-weight:700}
+.form-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:24px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 18px;font-weight:700;border-radius:20px}
+.btn--primary{color:#fff;background:var(--grad);box-shadow:0 6px 14px rgba(157,123,216,.32)}
+.btn--primary:hover:not(:disabled){filter:brightness(.96)}
+.btn--ghost{background:#f1ebf6}
+.btn--wide{width:100%}
+.form-error{margin:8px 0;color:#b95774;font-size:12px}
+.boot{position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;gap:12px;background:var(--bg)}
+.boot .spin{animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ===== 移动端 ===== */
+.drawer-backdrop,.mobile-fab{display:none}
+@media(max-width:1180px){
+  .app-shell{grid-template-columns:300px minmax(0,1fr)}
+  .state-pane{position:fixed;inset:0 0 0 auto;width:min(360px,88vw);transform:translateX(100%);box-shadow:-14px 0 36px rgba(60,40,100,.2);transition:transform .18s}
+  .state-pane.is-open{transform:translateX(0)}
+  .mobile-fab--right{display:grid;position:fixed;top:16px;right:14px;z-index:10;width:34px;height:34px;place-items:center;color:var(--accent);border-radius:12px;background:rgba(255,255,255,.8)}
+}
+@media(max-width:760px){
+  .app-shell{display:block}
+  .chat-pane{width:100%;height:100%}
+  .char-pane{position:fixed;inset:0 auto 0 0;width:min(330px,90vw);transform:translateX(-100%);box-shadow:14px 0 36px rgba(60,40,100,.2);transition:transform .18s}
+  .char-pane.is-open{transform:translateX(0)}
+  .drawer-backdrop{display:block;position:fixed;inset:0;z-index:15;background:rgba(50,35,80,.4);backdrop-filter:blur(2px)}
+  .mobile-fab{display:grid;position:fixed;top:16px;z-index:10;width:34px;height:34px;place-items:center;color:var(--accent);border-radius:12px;background:rgba(255,255,255,.8)}
+  .mobile-fab--left{left:12px}
+  .msg-col{padding:20px 13px}
+  .msg__body{max-width:84%}
+  .composer{padding:10px}
+  .welcome{padding:14px}
+  .welcome-card{padding:24px 20px}
+}
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+<div class="boot" id="boot"><svg class="spin" width="22" height="22" viewBox="0 0 24 24"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b58ff0"/><stop offset="1" stop-color="#f09ad1"/></linearGradient></defs><path d="M12 2a10 10 0 0 0 0 20V18a6 6 0 0 1 0-12z" fill="url(#g)"/></svg><span>正在连接后端…</span></div>
+
+<div class="app-shell" id="shell">
+  <aside class="pane char-pane" id="charPane">
+    <div class="brand-row">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24"><path d="M12 18c-4-2.6-6.2-5-6.2-7.4C5.8 8.6 7 7.4 8.7 7.4c1.2 0 2.3.7 3.3 2 .9-1.3 2-2 3.3-2 1.7 0 2.9 1.2 2.9 3.2 0 2.4-2.2 4.8-6.2 7.4z" fill="#fff"/></svg>
+        </div>
+        <div><h1>Heart Chat</h1><small>心跳相册 · 情感陪伴</small></div>
+      </div>
+      <div class="brand-actions">
+        <button class="icon-btn" id="newChatBtn" title="新建会话">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="search-box">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="searchInput" placeholder="搜索角色 / 会话">
+    </div>
+    <div class="char-scroll">
+      <div class="sec-label">角色</div>
+      <div class="character-list" id="charList"><div class="history-empty">正在加载角色…</div></div>
+      <div class="sec-label">最近会话</div>
+      <div class="session-list" id="sessionList"><div class="history-empty">暂无会话</div></div>
+    </div>
+  </aside>
+
+  <section class="pane chat-pane">
+    <div class="chat-header">
+      <div class="chat-id">
+        <h2 id="chatTitle">选择一个会话开始</h2>
+        <p id="chatSub">或新建一段相处</p>
+      </div>
+      <div class="header-status">
+        <span class="status-badge" id="mdBadge"><i></i><span id="mdLabel">模型检测中</span></span>
+        <span class="status-badge"><i></i><span>自动保存</span></span>
+      </div>
+    </div>
+    <div class="msg-scroll" id="msgScroll"><div class="msg-col" id="msgCol"><div class="state-empty">从左侧选择或新建一个会话，开始对话</div></div></div>
+    <div class="composer" id="composer">
+      <div class="composer__box">
+        <textarea id="input" placeholder="写下你的动作或话语…（Enter 发送，Shift+Enter 换行）" rows="1"></textarea>
+        <button class="cmd-btn" id="cmdBtn" title="快捷指令">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M7 9l5 6 5-6"/></svg>
+        </button>
+        <button class="send-btn" id="sendBtn" title="发送">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13M22 2 15 22l-4-9-9-4z"/></svg>
+        </button>
+      </div>
+      <div class="composer__hint"><span id="hint">后端连接后将启用输入</span><span>流式对话</span></div>
+      <div class="cmd-panel" id="cmdPanel" hidden></div>
+    </div>
+  </section>
+
+  <aside class="pane state-pane" id="statePane">
+    <div class="state-head">
+      <h2>相处状态</h2><span class="stage-chip" id="stageChip">—</span>
+    </div>
+    <div class="state-scroll" id="stateScroll">
+      <div class="state-empty" id="stateEmpty">选择会话后显示实时状态</div>
+      <div id="stateBody" hidden></div>
+    </div>
+  </aside>
+</div>
+
+<div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
+<button class="mobile-fab mobile-fab--left" id="fabLeft" hidden>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+</button>
+<button class="mobile-fab mobile-fab--right" id="fabRight" hidden>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+</button>
+
+<script>
+/* ================= 状态与工具 ================= */
+const API='http://127.0.0.1:8000';
+const S={chars:[],sessions:[],active:null,commands:[],busy:false,pollTimer:null,modelReady:false};
+const $=id=>document.getElementById(id);
+const PHASE_CN={excitement:'兴奋期',plateau:'平台期',orgasm:'高潮',resolution:'余韵',calm:'平静',arousal:'兴奋'};
+const PRIVACY_CN={私密:'私密',半公开:'半公开',危险:'危险',private:'私密',semi_public:'半公开',dangerous:'危险'};
+async function api(path,opts={}){
+  const res=await fetch(API+path,Object.assign({headers:{'Content-Type':'application/json'}},opts));
+  if(!res.ok){let t='';try{t=await res.text()}catch(e){};throw new Error('HTTP '+res.status+' '+t.slice(0,160));}
+  const ct=res.headers.get('content-type')||'';
+  return ct.includes('json')?res.json():res.text();
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function pct(v){const n=Number(v)||0;return Math.round(Math.max(0,Math.min(1,n))*100);}
+
+/* ================= 启动 ================= */
+async function boot(){
+  let ok=false;
+  try{await api('/api/health');ok=true;}catch(e){}
+  try{const st=await api('/api/model/status');S.modelReady=!!st.main_model_loaded;
+    $('mdBadge').className='status-badge status-badge--'+(S.modelReady?'ready':'busy');
+    $('mdLabel').textContent=S.modelReady?'主模型就绪':'主模型未加载';
+  }catch(e){$('mdLabel').textContent='模型状态未知';}
+  $('boot').style.display='none';
+  await loadChars(); await loadSessions();
+  $('hint').textContent=ok?'后端已连接':'后端未连接，界面为设计预览';
+}
+async function loadChars(){try{S.chars=await api('/api/characters');}catch(e){S.chars=[];}renderChars();}
+async function loadSessions(){try{S.sessions=await api('/api/sessions');}catch(e){S.sessions=[];}renderSessions();}
+function renderChars(){
+  const el=$('charList');
+  if(!S.chars.length){
+    el.innerHTML=`<div class="empty-create">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <p>还没有角色<br>创建你的第一个角色，开始这段陪伴</p>
+      <button id="createFirst">创建角色</button></div>`;
+    $('createFirst').addEventListener('click',()=>openCreate());
+    return;
+  }
+  el.innerHTML=S.chars.map(c=>{
+    const act=S.active&&c.id===S.active.character_id?' is-active':'';
+    return `<div class="char-item${act}" data-char="${esc(c.id)}"><button class="char-main">
+      <span class="avatar">${esc((c.name||'?').slice(0,1))}</span>
+      <span class="char-copy"><strong>${esc(c.name)}</strong><span>${esc(c.relationship_type||'')}</span></span>
+    </button></div>`;
+  }).join('');
+  el.querySelectorAll('.char-item').forEach(n=>n.addEventListener('click',()=>{
+    const id=n.getAttribute('data-char');
+    const list=S.sessions.filter(s=>s.character_id===id);
+    if(list.length)openSession(list[0].session_id);else openWelcome(id);
+  }));
+}
+function renderSessions(){
+  const el=$('sessionList');
+  if(!S.sessions.length){el.innerHTML='<div class="history-empty">暂无会话，先创建一个角色吧</div>';return;}
+  el.innerHTML=S.sessions.map(s=>{
+    const cur=S.active&&s.session_id===S.active.session_id?' is-current':'';
+    const n=S.chars.find(c=>c.id===s.character_id);
+    return `<div class="session-row">
+      <button class="session-choice${cur}" data-sid="${esc(s.session_id)}"><span>
+        <strong>${esc(n?s.name:(s.character_name||s.session_name))}</strong>
+        <small>${esc(s.summary||s.current_stage||'')}</small></span></button>
+      <button class="del-btn" data-del="${esc(s.session_id)}" title="删除会话">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('.session-choice').forEach(n=>n.addEventListener('click',()=>openSession(n.getAttribute('data-sid'))));
+  el.querySelectorAll('.del-btn').forEach(n=>n.addEventListener('click',async()=>{
+    const sid=n.getAttribute('data-del');
+    if(!confirm('删除这个会话？'))return;
+    try{await api('/api/sessions/'+sid,{method:'DELETE'});await loadSessions();
+      if(S.active&&S.active.session_id===sid){S.active=null;resetChatUI();}
+    }catch(e){alert('删除失败：'+e.message);}
+  }));
+}
+
+/* ================= 会话与消息 ================= */
+function resetChatUI(){
+  $('chatTitle').textContent='选择一个会话开始';$('chatSub').textContent='或新建一段相处';
+  $('msgCol').innerHTML='<div class="state-empty">从左侧选择或新建一个会话，开始对话</div>';
+  $('stageChip').textContent='—';$('stateEmpty').hidden=false;$('stateBody').hidden=true;stopPoll();
+}
+async function openSession(sid){
+  stopPoll();
+  try{
+    const d=await api('/api/sessions/'+sid);S.active=d;
+    $('chatTitle').textContent=d.meta.character_name||'会话';
+    $('chatSub').textContent=(d.meta.current_time||'')+' · '+(d.meta.current_location||'')+' · '+(d.meta.relationship_stage||'');
+    renderMessages(d.messages||[]);renderState(d.state);
+    $('stageChip').textContent=d.meta.current_stage||'—';
+    $('stateEmpty').hidden=true;$('stateBody').hidden=false;
+    $('composer').style.opacity='1';$('input').disabled=false;$('sendBtn').disabled=false;
+    loadCommands();startPoll(sid);renderChars();renderSessions();
+  }catch(e){alert('加载会话失败：'+e.message);}
+}
+function renderMessages(msgs){
+  const col=$('msgCol');
+  if(!msgs.length){col.innerHTML='<div class="state-empty">对话尚未开始，说点什么吧</div>';return;}
+  col.innerHTML=msgs.map(m=>{
+    if(m.role==='system'||m.role==='narrator')return `<div class="sys-msg">${esc(m.content)}</div>`;
+    const mine=m.role==='user';
+    return `<div class="msg${mine?' msg--mine':''}"><div class="msg__body">
+      <div class="msg__meta"><span>${mine?'你':'她'}</span><span>${esc(m.timestamp||'')}</span></div>
+      <div class="msg__bubble">${esc(m.content)}</div></div></div>`;
+  }).join('');
+  $('msgScroll').scrollTop=$('msgScroll').scrollHeight;
+}
+
+/* ================= 状态仪表盘 ================= */
+function renderState(st){
+  const body=$('stateBody');
+  const a=Number(st.arousal)||0,trust=Number(st.trust)||0,close=Number(st.closeness)||0;
+  const acc=Number(st.acceptance)||0,stamina=Number(st.stamina)||0,fatigue=Number(st.fatigue)||0;
+  const hr=Number(st.heart_rate)||0;
+  const phase=PHASE_CN[st.phase]||st.phase||'—',emo=esc(st.emotion||'—');
+  const privacy=PRIVACY_CN[st.privacy]||st.privacy||'—',clothing=esc(st.clothing||'—');
+  const timeLoc=esc((st.time_str||'')+' · '+(st.location||''));
+  const arc=2*Math.PI*52,fill=arc*pct(a);
+  const chips=[];
+  if(st.relationship_stage)chips.push(st.relationship_stage);
+  if(st.scenario_stage)chips.push(st.scenario_stage);
+  if(st.is_orgasm)chips.push('高潮中');
+  if(st.is_interrupted)chips.push('被中断');
+  if(st.has_people||st.others_present)chips.push('有旁人在场');
+  if(st.privacy_level!=null&&st.privacy_level<0.4)chips.push('高暴露风险');
+  body.innerHTML=`
+  <div class="state-section"><div class="gauge-wrap">
+    <div class="gauge"><svg width="118" height="118" viewBox="0 0 118 118">
+      <circle cx="59" cy="59" r="52" fill="none" stroke="#ece4f3" stroke-width="10"/>
+      <circle cx="59" cy="59" r="52" fill="none" stroke="url(#gaugeGrad)" stroke-width="10" stroke-linecap="round" stroke-dasharray="${fill.toFixed(1)} ${arc.toFixed(1)}"/></svg>
+      <div class="g-num"><strong>${pct(a)}</strong><small>兴奋度</small></div></div>
+    <div class="gauge-legend"><p><b>${phase}</b> · ${emo}</p><p>${esc(st.emotion_detail||'')}</p></div></div></div>
+  <div class="state-section">
+    <div class="metric"><div class="metric__label"><span>关系亲密</span><b>${pct(close)}%</b></div><div class="metric__track"><span class="metric__fill" style="width:${pct(close)}%"></span></div></div>
+    <div class="metric"><div class="metric__label"><span>信任</span><b>${pct(trust)}%</b></div><div class="metric__track"><span class="metric__fill metric__fill--ok" style="width:${pct(trust)}%"></span></div></div>
+    <div class="metric"><div class="metric__label"><span>接纳程度</span><b>${pct(acc)}%</b></div><div class="metric__track"><span class="metric__fill metric__fill--warm" style="width:${pct(acc)}%"></span></div></div>
+    <div class="metric"><div class="metric__label"><span>体力</span><b>${pct(stamina)}%</b></div><div class="metric__track"><span class="metric__fill" style="width:${pct(stamina)}%"></span></div></div></div>
+  <div class="state-section"><div class="section-title">生命体征</div><div class="vitals">
+    <div><span>心率</span><strong>${hr}</strong><small>次/分</small></div>
+    <div><span>衣物</span><strong style="font-size:14px">${clothing}</strong></div>
+    <div style="grid-column:1/-1"><span>此刻</span><span class="vitals__text">${timeLoc}</span></div>
+    <div style="grid-column:1/-1"><span>隐私</span><span class="vitals__text">${privacy}</span></div></div></div>
+  <div class="state-section"><div class="section-title">阶段标记</div><div class="chips">
+    ${chips.length?chips.map(c=>`<span class="chip${c==='高潮中'?' chip--hot':''}">${esc(c)}</span>`).join(''):'<span class="chip">暂无</span>'}
+  </div></div>`;
+  $('stageChip').textContent=st.stage||'—';
+}
+function startPoll(sid){stopPoll();S.pollTimer=setInterval(async()=>{try{const d=await api('/api/sessions/'+sid+'/state');renderState(d.state);}catch(e){}},3000);}
+function stopPoll(){if(S.pollTimer){clearInterval(S.pollTimer);S.pollTimer=null;}}
+
+/* ================= 发送 ================= */
+function appendMsg(role,content,pending){
+  const col=$('msgCol'),mine=role==='user';
+  const div=document.createElement('div');
+  div.className='msg'+(mine?' msg--mine':'')+(pending?' msg--pending':'');
+  div.innerHTML=`<div class="msg__body"><div class="msg__meta"><span>${mine?'你':'她'}</span><span>${new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}</span></div>
+    <div class="msg__bubble">${esc(content)}</div></div>`;
+  col.appendChild(div);$('msgScroll').scrollTop=$('msgScroll').scrollHeight;return div;
+}
+function showTyping(){const col=$('msgCol');const div=document.createElement('div');div.className='msg';div.id='typingRow';
+  div.innerHTML=`<div class="msg__body"><div class="msg__meta"><span>她</span></div><div class="msg__bubble"><span class="typing"><i></i><i></i><i></i></span></div></div>`;
+  col.appendChild(div);$('msgScroll').scrollTop=$('msgScroll').scrollHeight;}
+function removeTyping(){const t=$('typingRow');if(t)t.remove();}
+async function send(){
+  if(S.busy||!S.active)return;
+  const inp=$('input'),text=inp.value.trim();if(!text)return;
+  inp.value='';inp.style.height='auto';const sid=S.active.session_id;
+  S.busy=true;$('sendBtn').disabled=true;appendMsg('user',text);showTyping();
+  try{
+    const r=await api('/api/chat',{method:'POST',body:JSON.stringify({session_id:sid,message:text,request_id:'wx'+Date.now()})});
+    removeTyping();
+    const resp=r.response||r.content||'';if(resp)appendMsg('assistant',resp);
+    if(r.state)renderState(r.state);
+    if(r.messages&&r.messages.length){$('msgCol').innerHTML='';renderMessages(r.messages);}
+    await loadSessions();
+  }catch(e){
+    removeTyping();
+    const d=document.createElement('div');d.className='inline-error';d.textContent='生成失败：'+e.message;
+    $('msgCol').appendChild(d);$('msgScroll').scrollTop=$('msgScroll').scrollHeight;
+  }finally{S.busy=false;$('sendBtn').disabled=false;$('input').focus();}
+}
+
+/* ================= 快捷指令 ================= */
+async function loadCommands(){if(!S.active)return;try{S.commands=await api('/api/chat/commands?session_id='+encodeURIComponent(S.active.session_id));renderCmds();}catch(e){S.commands=[];}}
+function renderCmds(){
+  const panel=$('cmdPanel');
+  if(!S.commands.length){panel.innerHTML=`<div class="cmd-panel__head"><b style="font-size:12px">快捷指令</b></div><div class="cmd-empty">暂无快捷指令</div>`;return;}
+  const groups={};S.commands.forEach(c=>{const g=c.group||'通用';(groups[g]=groups[g]||[]).push(c);});
+  panel.innerHTML=`<div class="cmd-panel__head"><b style="font-size:12px">快捷指令</b><button class="icon-btn" id="cmdClose"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>`+
+    Object.entries(groups).map(([g,list])=>`<div class="cmd-group"><h3>${esc(g)}</h3>${list.map(c=>`<button data-cid="${esc(c.id)}"><span>${esc(c.label)}</span><p>${esc(c.description||c.content||'')}</p></button>`).join('')}</div>`).join('');
+  panel.querySelectorAll('[data-cid]').forEach(b=>b.addEventListener('click',()=>{
+    const c=S.commands.find(x=>x.id===b.getAttribute('data-cid'));
+    if(c){$('input').value=c.content||c.label;$('input').focus();$('cmdPanel').hidden=true;}
+  }));
+  $('cmdClose').addEventListener('click',()=>{$('cmdPanel').hidden=true;});
+}
+
+/* ================= 创建角色 ================= */
+let SCENARIOS=[];
+function openCreate(){
+  $('welcome')&&$('welcome').remove();
+  document.body.insertAdjacentHTML('beforeend',`<div class="welcome" id="welcome"><div class="welcome-card">
+    <div class="eyebrow">NEW CHARACTER</div><h2>创造你的角色</h2>
+    <p>给她一个名字与性格，她会成为独一无二的存在。</p>
+    <label>名字<input id="cName" placeholder="例如：小樱"></label>
+    <label>关系类型<select id="cRel"><option>青梅竹马</option><option>邻居</option><option>恋人</option><option>同桌</option><option>网友</option><option>其他</option></select></label>
+    <label>人设描述<textarea id="cDesc" rows="4" placeholder="性格、喜好、说话方式、你们的关系…"></textarea></label>
+    <div class="form-error" id="cErr"></div>
+    <div class="form-actions"><button class="btn btn--ghost" id="cCancel">取消</button>
+      <button class="btn btn--primary" id="cSave">创造她</button></div></div></div>`);
+  $('cCancel').addEventListener('click',()=>$('welcome').remove());
+  $('cSave').addEventListener('click',async()=>{
+    const name=$('cName').value.trim(),desc=$('cDesc').value.trim();
+    if(!name){$('cErr').textContent='请给角色起个名字';return;}
+    const rel=$('cRel').value;
+    $('cSave').disabled=true;$('cSave').textContent='创造中…';
+    try{
+      const c=await api('/api/characters',{method:'POST',body:JSON.stringify({
+        name,age:20,adult_confirmed:true,relationship_type:rel,character_description:desc,
+        initial_trust:0.5,initial_closeness:0.4})});
+      $('welcome').remove();await loadChars();await openWelcome(c.id);
+    }catch(e){$('cErr').textContent='创建失败：'+e.message;$('cSave').disabled=false;$('cSave').textContent='创造她';}
+  });
+}
+async function openWelcome(preChar){
+  if(!S.chars.length){openCreate();return;}
+  let html=`<div class="welcome" id="welcome"><div class="welcome-card">
+    <div class="eyebrow">HEART CHAT</div><h2>开始一段新的相处</h2>
+    <p>选择角色与情景，设定你们的起点。</p>
+    <fieldset><legend>角色</legend><div id="wChars">加载中…</div></fieldset>
+    <fieldset><legend>情景</legend><div id="wScen">加载中…</div></fieldset>
+    <div style="display:flex;gap:20px;margin-top:6px">
+      <label style="flex:1">初始信任 <span class="range-row"><input type="range" id="wTrust" min="0" max="1" step="0.05" value="0.6"><output id="wTrustV">60%</output></span></label>
+      <label style="flex:1">初始亲密 <span class="range-row"><input type="range" id="wClose" min="0" max="1" step="0.05" value="0.5"><output id="wCloseV">50%</output></span></label></div>
+    <label>隐私环境<select id="wPrivacy"><option value="私密">私密 · 无人打扰</option><option value="半公开">半公开 · 偶有声响</option><option value="危险">危险 · 随时可能被发现</option></select></label>
+    <div class="form-error" id="wErr"></div>
+    <div class="form-actions"><button class="btn btn--ghost" id="wCancel">取消</button>
+      <button class="btn btn--primary" id="wSubmit">开始这段相处</button></div></div></div>`;
+  $('welcome')&&$('welcome').remove();
+  document.body.insertAdjacentHTML('beforeend',html);
+  const w=$('welcome'),cwrap=$('wChars');
+  cwrap.innerHTML=S.chars.map((c,i)=>`<label class="scenario-opt${(preChar&&c.id===preChar)||(!preChar&&i===0)?' is-sel':''}" style="cursor:pointer">
+    <input type="radio" name="wchar" value="${esc(c.id)}" ${(preChar&&c.id===preChar)||(!preChar&&i===0)?'checked':''}>
+    <span><b>${esc(c.name)}</b><small>${esc(c.relationship_type||'')} · ${esc(c.current_stage||'')}</small></span></label>`).join('');
+  cwrap.querySelectorAll('label').forEach(l=>l.addEventListener('click',()=>{cwrap.querySelectorAll('label').forEach(x=>x.classList.remove('is-sel'));l.classList.add('is-sel');}));
+  const swrap=$('wScen');
+  try{SCENARIOS=await api('/api/scenarios');}catch(e){SCENARIOS=[];}
+  swrap.innerHTML=SCENARIOS.map((s,i)=>`<button type="button" class="scenario-opt${i===0?' is-sel':''}" data-sid="${esc(s.id)}">
+    <input type="radio" name="wscen" value="${esc(s.id)}" ${i===0?'checked':''}>
+    <span><b>${esc(s.title)}</b><small>${esc(s.stage_name||s.stage||'')} · ${esc(s.location||'')}</small></span></button>`).join('')||'<div class="history-empty">无情景</div>';
+  swrap.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{swrap.querySelectorAll('button').forEach(x=>x.classList.remove('is-sel'));b.classList.add('is-sel');}));
+  $('wTrust').addEventListener('input',()=>$('wTrustV').textContent=Math.round($('wTrust').value*100)+'%');
+  $('wClose').addEventListener('input',()=>$('wCloseV').textContent=Math.round($('wClose').value*100)+'%');
+  $('wCancel').addEventListener('click',()=>w.remove());
+  $('wSubmit').addEventListener('click',async()=>{
+    const charEl=cwrap.querySelector('input[name=wchar]:checked');
+    const scenEl=swrap.querySelector('input[name=wscen]:checked');
+    if(!charEl){$('wErr').textContent='请选择一个角色';return;}
+    const payload={character_id:charEl.value,scenario_id:scenEl?scenEl.value:null,
+      initial_trust:Number($('wTrust').value),initial_closeness:Number($('wClose').value),privacy:$('wPrivacy').value};
+    $('wSubmit').disabled=true;$('wSubmit').textContent='创建中…';
+    try{
+      const r=await api('/api/sessions',{method:'POST',body:JSON.stringify(payload)});
+      const sid=r.session_id||r.data&&r.data.session_id;
+      w.remove();await loadSessions();if(sid)await openSession(sid);
+    }catch(e){$('wErr').textContent='创建失败：'+e.message;$('wSubmit').disabled=false;$('wSubmit').textContent='开始这段相处';}
+  });
+}
+
+/* ================= 绑定与初始化 ================= */
+function bind(){
+  $('newChatBtn').addEventListener('click',()=>openWelcome());
+  $('sendBtn').addEventListener('click',()=>send());
+  const inp=$('input');
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
+  inp.addEventListener('input',()=>{inp.style.height='auto';inp.style.height=Math.min(inp.scrollHeight,132)+'px';});
+  $('cmdBtn').addEventListener('click',()=>{const p=$('cmdPanel');p.hidden=!p.hidden;if(!p.hidden)renderCmds();});
+  $('fabLeft').addEventListener('click',()=>{$('charPane').classList.toggle('is-open');$('drawerBackdrop').hidden=false;});
+  $('fabRight').addEventListener('click',()=>{$('statePane').classList.toggle('is-open');$('drawerBackdrop').hidden=false;});
+  $('drawerBackdrop').addEventListener('click',()=>{$('charPane').classList.remove('is-open');$('statePane').classList.remove('is-open');$('drawerBackdrop').hidden=true;});
+  $('searchInput').addEventListener('input',e=>{const q=e.target.value.trim().toLowerCase();
+    document.querySelectorAll('.char-item').forEach(n=>{n.style.display=n.textContent.toLowerCase().includes(q)?'':'none';});});
+  window.addEventListener('keydown',e=>{if(e.key==='Escape'){const w=$('welcome');if(w)w.remove();}});
+}
+document.addEventListener('DOMContentLoaded',()=>{bind();boot();});
+</script>
+</body>
+</html>

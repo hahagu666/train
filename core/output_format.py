@@ -9,6 +9,13 @@ _ENGLISH_RUN = re.compile(r"[A-Za-z]+(?:[\s,.\-!?]+[A-Za-z]+){2,}")
 _ROLE_LABEL = re.compile(r'^(?:妹妹|姐姐|哥哥|角色|助手|assistant)[：:]\s*', re.IGNORECASE)
 
 
+
+# === 日志补接线（详细排障） ===
+try:
+    from app.logger import debug, info, success, warning, error, trace
+except Exception:
+    debug = info = success = warning = error = trace = lambda *a, **k: None
+
 def _strip_protocol(text: str) -> str:
     value = re.sub(r"```(?:text|markdown)?\s*|```", "", text or "", flags=re.IGNORECASE).strip()
     value = re.sub(r"^(?:<\|im_start\|>|<\|assistant\|>|<\|endoftext\|>)+", "", value).strip()
@@ -101,6 +108,7 @@ def _strip_english_sentences(text: str) -> str:
 
 def normalize_character_output(text: str) -> str:
     """Return an idempotent character output with dialogue/narration separation."""
+    debug("后处理", f"输出规范化开始: 长度={len(text)}字")
     value = _strip_english_sentences(_strip_speaker_label(_strip_protocol(text)))
     if not value:
         return ""

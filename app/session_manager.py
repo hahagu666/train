@@ -32,6 +32,13 @@ SUPPORTED_SNAPSHOT_VERSIONS = {1, 2, CURRENT_SNAPSHOT_VERSION}
 SUPPORTED_SAVE_VERSIONS = {1, 2, 3, CURRENT_SAVE_VERSION}
 
 
+
+# === 日志补接线（详细排障） ===
+try:
+    from app.logger import debug, info, success, warning, error, trace
+except Exception:
+    debug = info = success = warning = error = trace = lambda *a, **k: None
+
 def _normalize_user_profile(payload: object) -> dict:
     result = deepcopy(payload) if isinstance(payload, dict) else {}
     result["name"] = str(result.get("name") or "你").strip() or "你"
@@ -474,6 +481,7 @@ class SessionManager:
         })
 
     def capture_snapshot(self, inst: SessionInstance, operation: str = "turn", preview: str = "") -> dict:
+        debug("存档", f"捕获快照: session={inst.meta.session_id}, operation={operation}, turn={inst.turn_count}, preview={preview[:30]}")
         snapshot_id = uuid.uuid4().hex[:16]
         snapshot = {
             "format_version": CURRENT_SNAPSHOT_VERSION,
@@ -588,6 +596,7 @@ class SessionManager:
                        location: str = None, time_str: str = None,
                        privacy: str = None,
                        user_profile: Optional[dict] = None) -> SessionInstance:
+        debug("会话", f"创建会话: char={char_id}, scenario={scenario_id}, trust={initial_trust}, closeness={initial_closeness}, location={location}")
         if self.char_mgr:
             char = self.char_mgr.get_character(char_id)
             if not char:
@@ -815,6 +824,7 @@ class SessionManager:
         return None
 
     def delete_session(self, session_id: str) -> bool:
+        debug("会话", f"删除会话: {session_id}")
         if session_id not in self.sessions:
             return False
         sdir = self._session_dir(session_id)
@@ -1112,6 +1122,7 @@ class SessionManager:
 
     def auto_save(self, session_id: str) -> Optional[dict]:
         """覆盖_autosave槽并返回轻量元数据；活跃事务期间不读取瞬态状态。"""
+        debug("存档", f"自动存档触发: session={session_id}")
         inst = self.sessions.get(session_id)
         if not inst:
             return None

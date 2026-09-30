@@ -309,12 +309,14 @@ def create_desk_mate() -> CharacterBase:
 
 
 def get_all_presets() -> list:
-    """返回所有预设角色"""
-    return [
-        create_imouto(),
-        create_childhood_friend(),
-        create_desk_mate(),
-    ]
+    """返回所有预设角色（已按用户要求彻底清空内置角色，可按需恢复下方注释）"""
+    # 原内置角色（imouto / childhood_friend / desk_mate）已移除：
+    # return [
+    #     create_imouto(),
+    #     create_childhood_friend(),
+    #     create_desk_mate(),
+    # ]
+    return []
 
 
 def get_preset_by_id(char_id: str) -> CharacterBase:
