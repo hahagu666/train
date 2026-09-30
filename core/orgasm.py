@@ -49,10 +49,11 @@ class OrgasmSystem:
         active_stims: {部位名: 近期刺激强度}
         """
         probs = {
-            "clitoral": 0.30,
+            "clitoral": 0.28,
             "vaginal": 0.10,
             "blended": 0.25,
             "cervical": 0.03,
+            "anal": 0.05,
             "multiple_chain": 0.02,
         }
 
@@ -61,8 +62,14 @@ class OrgasmSystem:
             clit_stim = active_stims.get("clitoris", 0)
             vag_stim = active_stims.get("vaginal_canal", 0) + active_stims.get("g_spot", 0)
             cervix_stim = active_stims.get("cervix", 0)
+            anal_stim = active_stims.get("anus", 0)
 
-            if clit_stim > 0.5 and vag_stim < 0.3:
+            if anal_stim > 0.5 and vag_stim < 0.4 and clit_stim < 0.4:
+                probs["anal"] += 0.45
+                probs["vaginal"] -= 0.15
+                probs["clitoral"] -= 0.15
+                probs["blended"] -= 0.1
+            elif clit_stim > 0.5 and vag_stim < 0.3:
                 probs["clitoral"] += 0.35
                 probs["blended"] -= 0.1
             elif vag_stim > 0.5 and clit_stim < 0.3:

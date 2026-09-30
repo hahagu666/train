@@ -39,6 +39,10 @@ TOUCH_SENSATIONS = {
     "clitoris": ["被拨动", "被揉弄", "麻酥地跳", "一阵阵快感", "敏感地颤抖"],
     "inside": ["内壁被摩擦", "深处被顶到", "被搅动", "被撑开塞满", "收缩着绞紧"],
     "throbbing": ["突突地跳着", "一阵阵酥麻", "跳动着发出快感"],
+    "anal_dry": ["后穴又紧又涩地夹着", "干涩地传来一阵胀痛", "后面又酸又紧", "被撑得发胀却不够润滑"],
+    "anal_adapting": ["紧致地包裹着", "被缓缓撑开，酸胀中带着一点异样的酥麻", "后面紧得咬住不放", "又紧又热地绞着"],
+    "anal_ready": ["被滑腻地填满", "后穴已经软下来，紧致地吮吸着", "里面又紧又烫地绞住", "饱胀感满满地被撑开"],
+    "anal_pain": ["火辣辣地疼", "撕裂般的胀痛", "又疼又涨", "酸胀得发疼"],
 }
 
 TEMPERATURE_SENSATIONS = {
@@ -236,6 +240,24 @@ class SensationGenerator:
         # === 1. 触感采样 ===
         if action_type:
             touch_opts = []
+            # === 肛交专用触感：目标含 anus ===
+            anus_handled = False
+            if target_parts and "anus" in target_parts:
+                anus_handled = True
+                anus = None
+                for region in state.body.values():
+                    from .body.parts import BodyRegion
+                    if isinstance(region, BodyRegion) and "anus" in region.sub_parts:
+                        anus = region.get("anus")
+                        break
+                lub = anus.get("lubrication") if anus else 0.05
+                adapt = anus.get("adaptation") if anus else 0.05
+                pain = anus.get("anal_pain") if anus else 0.0
+                touch_opts += TOUCH_SENSATIONS["anal_ready"] if lub >= 0.35 else TOUCH_SENSATIONS["anal_dry"]
+                if 0.35 <= lub and adapt < 0.5:
+                    touch_opts += TOUCH_SENSATIONS["anal_adapting"]
+                if pain > 0.4:
+                    touch_opts += TOUCH_SENSATIONS["anal_pain"]
             # 根据动作类型
             if action_type in ["kiss", "deep_kiss"]:
                 touch_opts += TOUCH_SENSATIONS["soft"]
@@ -252,9 +274,9 @@ class SensationGenerator:
             if action_type in ["fondle_breast", "suck_nipple", "touch_breast"]:
                 touch_opts += TOUCH_SENSATIONS["nipple"]
                 touch_opts += TOUCH_SENSATIONS["soft"]
-            if action_type in ["thrust", "deep_thrust", "quick_thrust", "missionary",
+            if (action_type in ["thrust", "deep_thrust", "quick_thrust", "missionary",
                                 "cowgirl", "doggy", "penetrate", "finger_insert_one",
-                                "finger_insert_two"]:
+                                "finger_insert_two"]) and not anus_handled:
                 touch_opts += TOUCH_SENSATIONS["penetrating"]
                 touch_opts += TOUCH_SENSATIONS["inside"]
                 if ans.arousal_global > 0.5:

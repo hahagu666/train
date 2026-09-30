@@ -139,6 +139,31 @@ class CharacterState:
             else:
                 actual_intensity *= (1 - pain * 0.3)
 
+        # === 后穴(anus)专门调制：润滑/适应/紧致/疼痛 ===
+        if part_name == "anus":
+            anus = gf.get("anus")
+            lub = anus.get("lubrication")
+            adapt = anus.get("adaptation")
+            pain = anus.get("anal_pain")
+            if lub < 0.35:
+                # 润滑不足：痛感上升、快感打折、适应很慢
+                pain_inc = max(0.0, (0.35 - lub)) * 0.8 * intensity
+                anus.add("anal_pain", pain_inc, max_val=1.0)
+                self.emotion.blend["pain"] = min(1.0, self.emotion.blend.get("pain", 0) + pain_inc * 0.5)
+                actual_intensity *= 0.35
+                anus.add("adaptation", intensity * 0.05, max_val=0.3)
+                anus.add("lubrication", -intensity * 0.04, min_val=0.0)
+            else:
+                # 有润滑：适应上升、紧致下降、肛内快感累积
+                anus.add("adaptation", intensity * 0.16, max_val=1.0)
+                anus.set("tightness", max(0.15, anus.get("tightness") - intensity * 0.06))
+                anus.add("anal_pleasure", actual_intensity * 0.12, max_val=1.0)
+                anus.add("lubrication", -intensity * 0.02, min_val=0.0)
+            # 已适应后疼痛渐消
+            if adapt > 0.55:
+                anus.add("anal_pain", -0.06, min_val=0.0)
+            # 润滑不足时也会消耗，需反复用油补充
+
         # 通知敏感度调制器刺激变化
         self.sensitivity_mods.on_stimulation_change(part_name)
 
@@ -420,6 +445,21 @@ class CharacterState:
             if a.muscle_tone > 0.6:
                 phys_desc.append("身子发软")
 
+        # 后穴状态
+        anus = gf.get("anus")
+        if anus and (anus.get("fullness") > 0.3 or anus.get("anal_pleasure") > 0.3 or anus.get("lubrication") < 0.35):
+            lub = anus.get("lubrication")
+            adapt = anus.get("adaptation")
+            pain = anus.get("anal_pain")
+            if pain > 0.5:
+                phys_desc.append("后面又疼又胀")
+            elif lub < 0.35:
+                phys_desc.append("后面还很紧很涩")
+            elif adapt < 0.5:
+                phys_desc.append("后穴紧致地含着你，还有点酸胀")
+            else:
+                phys_desc.append("后穴已经被肏软了，又紧又热地绞着你")
+
         # 高潮阶段
         if self.orgasm.phase == "plateau":
             phys_desc.append("快感累积着快要到顶点了")
@@ -429,6 +469,7 @@ class CharacterState:
                 "vaginal": "阴道深处高潮中",
                 "blended": "混合高潮中，全身都在痉挛",
                 "cervical": "宫颈被顶到的深处高潮",
+                "anal": "后穴深处被肏到高潮，后穴紧紧绞着",
                 "multiple_chain": "一波接一波的高潮根本停不下来",
             }
             phys_desc.append(type_descs.get(self.orgasm.orgasm_type, "正在高潮中"))

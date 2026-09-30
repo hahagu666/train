@@ -123,10 +123,11 @@ ACTION_KEYWORDS = {
     "finger_gspot": ["抠.*G点", "按.*G点", "顶.*G点", "刮.*G点", "找.*G点"],
     "rub_penis_against": ["肉棒.*蹭", "阴茎.*抵", "顶着.*口", "蹭.*穴口", "磨.*入口"],
     "guide_penis": ["扶着.*对准", "引导.*进来", "拿着.*对准"],
-    "penetrate": ["插进去", "进入", "插入", "顶进去", " penetrat", "进入.*身体"],
+    "penetrate": ["插进去", "插进", "进入", "插入", "顶进去", "顶进", "送进去", "捅进去", " penetrat", "进入.*身体"],
     "thrust": ["抽插", "抽送", " thrust", "动起来", "开始动", "继续动"],
-    "slow_thrust": ["慢慢.*抽插", "缓缓.*进入", "慢慢.*动", "浅插"],
-    "deep_thrust": ["深深.*插", "顶到底", "整根.*没入", "直捣"],
+    "slow_thrust": ["慢慢.*抽插", "缓缓.*进入", "慢慢.*动", "浅插",
+                   "缓缓插进", "慢慢插进", "轻轻推进", "慢慢送进去", "轻轻送进去", "缓缓推进"],
+    "deep_thrust": ["深深.*插", "深深插进", "顶到底", "整根.*没入", "直捣", "捅到底", "整个顶进"],
     "quick_thrust": ["快速.*抽", "快速.*动", "猛.*插", "快速抽送"],
 
     # 姿势
@@ -186,6 +187,7 @@ PART_KEYWORDS = {
     "genital_female": ["私处", "下面", "那里", "阴部", "私密处"],
     "clitoris": ["阴蒂", "豆豆", "小豆豆", "蒂", "clit"],
     "vaginal_vestibule": ["阴道口", "穴口", "入口"],
+    "anus": ["肛门", "后庭", "后穴", "菊穴", "屁眼", "后门", "菊花", "后面那", "后面这个", "后面那个"],
     "vaginal_canal": ["里面", "体内", "深处", "里面"],
     "g_spot": ["G点", "g点"],
     "hands": ["手", "手指", "hand", "finger"],
@@ -308,6 +310,7 @@ def _detect_parts(text: str) -> List[str]:
             "breast": ["breast_left", "breast_right", "nipple_left", "nipple_right"],
             "nipple": ["nipple_left", "nipple_right"],
             "genital_female": ["clitoris", "vaginal_vestibule", "labia_majora", "labia_minora"],
+            "anus": ["anus"],
         }.get(part, [part])
         for item in mapped:
             if item not in concrete:
@@ -516,11 +519,11 @@ def _part_belongs_to(part: str, action_type: str) -> bool:
         "finger_insert_one": ["vaginal_canal", "g_spot"],
         "finger_insert_two": ["vaginal_canal", "g_spot"],
         "finger_gspot": ["g_spot", "vaginal_canal"],
-        "penetrate": ["vaginal_canal"],
-        "thrust": ["vaginal_canal", "g_spot"],
-        "slow_thrust": ["vaginal_canal"],
-        "deep_thrust": ["vaginal_canal", "cervix"],
-        "quick_thrust": ["vaginal_canal"],
+        "penetrate": ["vaginal_canal", "anus"],
+        "thrust": ["vaginal_canal", "g_spot", "anus"],
+        "slow_thrust": ["vaginal_canal", "anus"],
+        "deep_thrust": ["vaginal_canal", "cervix", "anus"],
+        "quick_thrust": ["vaginal_canal", "anus"],
     }
     valid = part_groups.get(action_type, [])
     if not valid:

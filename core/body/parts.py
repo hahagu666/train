@@ -149,7 +149,9 @@ def build_default_body() -> Dict[str, BodyRegion]:
             extra={"position": "high", "bump_pain": 0.0, "reached": False,
                    "dip": False, "sens_increased": False}),
         "anus": SubPart("anus", sensitivity=0.7,
-            extra={"contraction": 0.0, "relaxation": 0.1, "fullness": 0.0}),
+            extra={"contraction": 0.0, "relaxation": 0.1, "fullness": 0.0,
+                   "lubrication": 0.05, "adaptation": 0.05,
+                   "tightness": 1.0, "anal_pain": 0.0, "anal_pleasure": 0.0}),
         "perineum": SubPart("perineum", sensitivity=0.6),
     })
 
@@ -212,6 +214,11 @@ def compute_total_wetness(body: Dict[str, BodyRegion]) -> float:
     return (gf.get("vaginal_canal").get("wetness") * 0.5 +
             gf.get("vaginal_vestibule").get("wetness") * 0.3 +
             gf.get("vaginal_canal").get("tent_lub") * 0.2)
+
+def compute_anal_readiness(body: Dict[str, BodyRegion]) -> float:
+    """后穴可进入度 0-1：润滑 + 适应"""
+    anus = body["genital_female"].get("anus")
+    return max(0.0, min(1.0, anus.get("lubrication") * 0.6 + anus.get("adaptation") * 0.4))
 
 
 # === 伙伴状态感知（男性）===
