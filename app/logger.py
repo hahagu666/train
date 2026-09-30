@@ -262,7 +262,21 @@ class Logger:
             tb = traceback.format_exc()
             for line in tb.strip().split("\n"):
                 self._write_file_raw("  ↳ " + line)
-    
+
+    def _caller_location(self):
+        """从调用栈向上找到第一个非 logger.py 的调用点，返回 (文件名, 行号)。"""
+        import inspect
+        import os as _os
+        try:
+            frame = inspect.currentframe()
+            while frame:
+                frame = frame.f_back
+                if frame and _os.path.basename(frame.f_code.co_filename) != "logger.py":
+                    return _os.path.basename(frame.f_code.co_filename), frame.f_lineno
+        except Exception:
+            pass
+        return None
+
     # 便捷方法
     def debug(self, module: str, message: str):
         self.log(LogLevel.DEBUG, module, message)
@@ -289,9 +303,17 @@ class Logger:
         self.log(LogLevel.WARNING, module, message)
     
     def error(self, module: str, message: str, exc_info: bool = False):
+        if not exc_info:
+            loc = self._caller_location()
+            if loc:
+                message = f"{message}  [{loc[0]}:{loc[1]}]"
         self.log(LogLevel.ERROR, module, message, exc_info=exc_info)
     
     def critical(self, module: str, message: str, exc_info: bool = False):
+        if not exc_info:
+            loc = self._caller_location()
+            if loc:
+                message = f"{message}  [{loc[0]}:{loc[1]}]"
         self.log(LogLevel.CRITICAL, module, message, exc_info=exc_info)
     
     def separator(self, char: str = "-", length: int = 70):

@@ -117,9 +117,13 @@ class CharacterAppearance(BaseModel):
     height_cm: Optional[float] = None
     weight_kg: Optional[float] = None
     bust_cm: Optional[float] = None
+    cup_size: str = ""  # 罩杯（A/B/C/D/E），形象描写用
     body_type: str = "纤细"
     skin: str = "白皙"
     visual_age_hint: Optional[str] = None
+    # 身体特征：性交描写时用于刻画真实感受（形象化）
+    vagina_depth_cm: float = 12.0  # 阴道深度（cm）
+    vagina_tightness: str = "适中"  # 穴口紧度，带形象描述，如"紧致——手指贴得很紧，只留一条窄缝，进去时能清晰感到每寸包裹"
     extra: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -139,6 +143,8 @@ class CharacterSpeechStyle(BaseModel):
     first_person: str = "我"
     address_user: Dict[str, str] = Field(default_factory=dict)
     extra_hints: str = ""
+    # 用户自定义回复风格案例：作为模型输出格式/措辞示范注入
+    style_example: str = Field(default="", max_length=2000)
 
 
 class BodyParams(BaseModel):
@@ -254,12 +260,13 @@ class CreateCharacterRequest(BaseModel):
     name: str = Field(min_length=1, max_length=40)
     age: int = Field(ge=0, le=120)
     adult_confirmed: bool = False
-    relationship_type: Literal["step_sister", "classmate", "childhood_friend", "senior", "teacher", "neighbor", "other"] = "classmate"
+    relationship_type: str = "classmate"  # 自由字符串：妹妹/青梅竹马/同学/…或自定义，前端直接传中文
     character_description: str = Field(min_length=1, max_length=1200)
     backstory: str = Field(default="", max_length=2000)
     appearance: CharacterAppearance = Field(default_factory=CharacterAppearance)
     personality: CharacterPersonality = Field(default_factory=CharacterPersonality)
     speech_style: CharacterSpeechStyle = Field(default_factory=CharacterSpeechStyle)
+    body_params: BodyParams = Field(default_factory=BodyParams)  # 体力百分比 stamina(0-1) 等身体参数
     initial_outfit: str = Field(default="casual", min_length=1, max_length=80)
     initial_closeness: float = Field(default=0.3, ge=0.0, le=1.0)
     initial_trust: float = Field(default=0.3, ge=0.0, le=1.0)

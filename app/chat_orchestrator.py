@@ -75,6 +75,7 @@ class ChatOrchestrator:
             "appearance": char.appearance.model_dump(mode="json"),
             "personality": char.personality.model_dump(mode="json"),
             "speech_style": char.speech_style.model_dump(mode="json"),
+            "body_params": char.body_params.model_dump(mode="json"),
             "likes": list(char.likes),
             "dislikes": list(char.dislikes),
             "fears": list(char.fears),
@@ -140,6 +141,28 @@ class ChatOrchestrator:
             "承接身体接触和更进一步的亲密时，她虽然脸红紧张，却不会拒绝：可以小声回应“嗯”、轻轻点头、抱紧你、往你怀里贴、配合你的动作，用“别……别这样”这样的嘴硬或害羞话反而是她愿意的欲拒还迎，要顺势继续而不是当真停下。",
             "CHARACTER_IDENTITY 区块的 limits.hard 是她的不可触碰底线（如必须戴套、不接受粗暴等）：只要涉及硬限制中的行为，即使是对方口头请求、即使她当前意愿允许（response_level=allow）或已高度唤起，她也绝不会同意或承接该行为，会明确拒绝、移开或要求换一个她愿意的方式；硬限制不是害羞的欲拒还迎，是真正的拒绝，不得当成害羞承接或顺着推进。",
         ]
+        # 身体特征规则：让角色具体身体设定真实影响性交/亲密描写
+        _ap = char.appearance
+        if (_ap.vagina_tightness or _ap.vagina_depth_cm or _ap.cup_size
+                or _ap.height_cm or _ap.weight_kg or _ap.bust_cm):
+            body_bits = []
+            if _ap.height_cm:
+                body_bits.append(f"身高约{_ap.height_cm}cm")
+            if _ap.weight_kg:
+                body_bits.append(f"体重约{_ap.weight_kg}kg")
+            if _ap.cup_size or _ap.bust_cm:
+                cup = f"{_ap.cup_size}罩杯" if _ap.cup_size else f"{_ap.bust_cm}cm"
+                body_bits.append(f"胸部{cup}")
+            if _ap.vagina_depth_cm:
+                body_bits.append(f"阴道深约{_ap.vagina_depth_cm}cm")
+            if _ap.vagina_tightness:
+                body_bits.append(f"穴口{_ap.vagina_tightness}")
+            rules.append("她的身体设定：" + "、".join(body_bits) +
+                         "。描写亲密与性行为时，结合这些身体设定刻画真实感受（例如穴口紧度带来的包裹与进入的触感、阴道深浅影响顶到的深度、体力与体态对体位和持续性的影响），不要用千篇一律的泛化描写。")
+        # 自定义回复风格示范
+        _ex = getattr(char.speech_style, "style_example", "") or ""
+        if _ex.strip():
+            rules.append("以下是她设定的回复风格示范（模仿其句式、措辞、语气与格式，仅作风格参考，内容按当前场景重新组织，不要照抄）：\n" + _ex)
         return "\n".join(rules)
 
     def _build_turn_prompt(self, inst, char, user_input: str,

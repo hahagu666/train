@@ -194,6 +194,16 @@ legend{margin-bottom:9px;color:#5b5063;font-size:12.5px;font-weight:650}
 .btn--ghost{background:#f1ebf6}
 .btn--wide{width:100%}
 .form-error{margin:8px 0;color:#b95774;font-size:12px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+.form-grid .full{grid-column:1/-1}
+.divider{grid-column:1/-1;margin-top:4px;padding:7px 0 2px;color:var(--accent);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border-bottom:1px dashed #e3d6f1}
+.opt-hint{color:var(--ink2);font-size:10.5px;line-height:1.55}
+.stamina-row{display:flex;align-items:center;gap:10px}
+.stamina-row input[type=range]{flex:1;accent-color:#9d7bd8}
+.rel-other{display:none}
+.rel-other.show{display:block}
+@media(max-width:640px){.form-grid{grid-template-columns:1fr}}
+
 .boot{position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;gap:12px;background:var(--bg)}
 .boot .spin{animation:spin .9s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -508,23 +518,97 @@ function openCreate(){
   $('welcome')&&$('welcome').remove();
   document.body.insertAdjacentHTML('beforeend',`<div class="welcome" id="welcome"><div class="welcome-card">
     <div class="eyebrow">NEW CHARACTER</div><h2>创造你的角色</h2>
-    <p>给她一个名字与性格，她会成为独一无二的存在。</p>
-    <label>名字<input id="cName" placeholder="例如：小樱"></label>
-    <label>关系类型<select id="cRel"><option>青梅竹马</option><option>邻居</option><option>恋人</option><option>同桌</option><option>网友</option><option>其他</option></select></label>
-    <label>人设描述<textarea id="cDesc" rows="4" placeholder="性格、喜好、说话方式、你们的关系…"></textarea></label>
+    <p>给她一个名字与性格，她会成为独一无二的存在。所有设定都会影响她的反应与回应。</p>
+    <div class="form-grid">
+      <label class="full">名字<input id="cName" placeholder="例如：小樱"></label>
+      <label class="full">关系类型
+        <select id="cRel">
+          <option value="妹妹">妹妹</option>
+          <option value="青梅竹马">青梅竹马</option>
+          <option value="同学">同学</option>
+          <option value="继姐">继姐</option>
+          <option value="邻居">邻居</option>
+          <option value="老师">老师</option>
+          <option value="__other__">其他（自定义）</option>
+        </select>
+        <div class="rel-other" id="cRelOther"><input id="cRelCustom" placeholder="输入你们的关系，例如：学姐 / 房东…"></div>
+      </label>
+      <label>性格<input id="cTrait" placeholder="大方、温柔、害羞…"></label>
+      <label>喜好<input id="cLikes" placeholder="做爱、撒娇、被夸（逗号分隔）"></label>
+      <label class="full">说话方式 / 回复风格示范
+        <textarea id="cStyle" rows="2" placeholder="给她一段回复案例作为风格示范，例如：哥哥~（她歪着头看你，声音软软的）你也想我了呀？"></textarea>
+        <span class="opt-hint">模型会模仿这段的句式、措辞与语气，仅作风格参考。</span>
+      </label>
+    </div>
+    <div class="form-grid">
+      <div class="divider">身体素质</div>
+      <label>身高 (cm)<input id="cHeight" type="number" placeholder="158" min="130" max="190"></label>
+      <label>体重 (kg)<input id="cWeight" type="number" placeholder="46" min="35" max="90"></label>
+      <label>罩杯
+        <select id="cCup"><option value="">默认</option>
+          <option value="A">A — 一只手勉强盖住，微微鼓起</option>
+          <option value="B">B — 一只手刚好握满，柔软的弧度</option>
+          <option value="C">C — 一只手握不满，沉甸甸</option>
+          <option value="D">D — 需要双手托起，明显沉甸</option>
+          <option value="E">E — 很丰满，一手握不住</option>
+        </select>
+      </label>
+      <label>阴道深度
+        <select id="cDepth">
+          <option value="10">较浅（约10cm）— 很容易顶到最深处</option>
+          <option value="12" selected>适中（约12cm）— 刚好的深度</option>
+          <option value="14">深（约14cm）— 需要整根才能碰到花心</option>
+          <option value="16">很深（约16cm）— 几乎顶不到底</option>
+        </select>
+      </label>
+      <label class="full">穴口紧度
+        <select id="cTight">
+          <option value="紧致——手指贴得很紧，只留一条窄缝，进去时能清晰感到每寸包裹">紧致 — 手指贴得很紧，只留一条窄缝，进去时能清晰感到每寸包裹</option>
+          <option value="适中——恰到好处的贴合，进入时能感到柔软又紧实的包裹" selected>适中 — 恰到好处的贴合，柔软又紧实的包裹</option>
+          <option value="宽松——很轻易就滑进去，包裹感较松">宽松 — 很轻易就滑进去，包裹感较松</option>
+        </select>
+      </label>
+      <label class="full">体力
+        <div class="stamina-row"><input id="cStamina" type="range" min="10" max="100" step="5" value="70">
+          <b id="cStaminaVal">70%</b></div>
+        <span class="opt-hint">体力越低，越容易累、喘、腿软；越高越能持久配合。</span>
+      </label>
+    </div>
     <div class="form-error" id="cErr"></div>
     <div class="form-actions"><button class="btn btn--ghost" id="cCancel">取消</button>
       <button class="btn btn--primary" id="cSave">创造她</button></div></div></div>`);
   $('cCancel').addEventListener('click',()=>$('welcome').remove());
+  $('cRel').addEventListener('change',()=>{
+    $('cRelOther').classList.toggle('show',$('cRel').value==='__other__');
+    if($('cRel').value==='__other__')$('cRelCustom').focus();
+  });
+  $('cStamina').addEventListener('input',()=>$('cStaminaVal').textContent=$('cStamina').value+'%');
   $('cSave').addEventListener('click',async()=>{
-    const name=$('cName').value.trim(),desc=$('cDesc').value.trim();
+    const name=$('cName').value.trim();
     if(!name){$('cErr').textContent='请给角色起个名字';return;}
-    const rel=$('cRel').value;
+    let rel=$('cRel').value;
+    if(rel==='__other__'){const c=$('cRelCustom').value.trim();if(!c){$('cErr').textContent='请填写自定义关系类型';return;}rel=c;}
+    const trait=$('cTrait').value.trim();
+    const likes=$('cLikes').value.split(/[,，、\n]/).map(s=>s.trim()).filter(Boolean);
+    const style=$('cStyle').value.trim();
+    const desc=[trait?('性格：'+trait):'',likes.length?('喜好：'+likes.join('、')):''].filter(Boolean).join('\n')||'一位与你亲近的成年女孩。';
+    const body={
+      name,age:20,adult_confirmed:true,relationship_type:rel,character_description:desc,
+      appearance:{},
+      speech_style:{},body_params:{},initial_trust:0.5,initial_closeness:0.4
+    };
+    if(style)body.speech_style.style_example=style;
+    const h=$('cHeight').value,w=$('cWeight').value,cup=$('cCup').value,depth=$('cDepth').value,tight=$('cTight').value;
+    if(h)body.appearance.height_cm=parseFloat(h);
+    if(w)body.appearance.weight_kg=parseFloat(w);
+    if(cup)body.appearance.cup_size=cup;
+    if(depth)body.appearance.vagina_depth_cm=parseFloat(depth);
+    if(tight)body.appearance.vagina_tightness=tight;
+    body.body_params.stamina=parseInt($('cStamina').value,10)/100;
+    if(likes.length)body.likes=likes;
     $('cSave').disabled=true;$('cSave').textContent='创造中…';
     try{
-      const c=await api('/api/characters',{method:'POST',body:JSON.stringify({
-        name,age:20,adult_confirmed:true,relationship_type:rel,character_description:desc,
-        initial_trust:0.5,initial_closeness:0.4})});
+      const c=await api('/api/characters',{method:'POST',body:JSON.stringify(body)});
       $('welcome').remove();await loadChars();await openWelcome(c.id);
     }catch(e){$('cErr').textContent='创建失败：'+e.message;$('cSave').disabled=false;$('cSave').textContent='创造她';}
   });
