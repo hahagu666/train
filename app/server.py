@@ -187,12 +187,13 @@ async def log_requests(request: Request, call_next):
         
         if not is_health:
             status_color = "success" if response.status_code < 400 else "warning" if response.status_code < 500 else "error"
+            resp_line = f"  → {response.status_code} {method} {path} ({elapsed:.1f}ms)"
             if status_color == "success":
-                debug("接口", f"  → {response.status_code} ({elapsed:.1f}ms)")
+                debug("接口", resp_line)
             elif status_color == "warning":
-                warning("接口", f"  → {response.status_code} ({elapsed:.1f}ms)")
+                warning("接口", resp_line)
             else:
-                error("接口", f"  → {response.status_code} ({elapsed:.1f}ms)")
+                error("接口", resp_line)
         return response
     except Exception as e:
         elapsed = (time.time() - start) * 1000
@@ -207,10 +208,18 @@ async def http_error_handler(request: Request, exc: HTTPException):
         404: "NOT_FOUND",
         409: "CONFLICT",
     }.get(exc.status_code, "HTTP_ERROR")
+    # 记录详细定位：方法+路径+参数+错误详情
+    detail = str(exc.detail)
+    qs = str(request.url.query)
+    loc = f"{request.method} {request.url.path}" + (f"?{qs}" if qs else "")
+    if exc.status_code >= 500:
+        error("接口", f"HTTP {exc.status_code} [{code}] {loc} → {detail}")
+    elif exc.status_code >= 400:
+        warning("接口", f"HTTP {exc.status_code} [{code}] {loc} → {detail}")
     return JSONResponse(status_code=exc.status_code, content={
         "success": False,
         "code": code,
-        "message": str(exc.detail),
+        "message": detail,
         "data": None,
     })
 

@@ -447,16 +447,17 @@ function renderState(st){
       <circle cx="59" cy="59" r="52" fill="none" stroke="url(#gaugeGrad)" stroke-width="10" stroke-linecap="round" stroke-dasharray="${fill.toFixed(1)} ${arc.toFixed(1)}"/></svg>
       <div class="g-num"><strong>${pct(a)}</strong><small>兴奋度</small></div></div>
     <div class="gauge-legend"><p><b>${phase}</b> · ${emo}</p><p>${esc(st.emotion_detail||'')}</p></div></div></div>
-  <div class="state-section">
-    <div class="metric"><div class="metric__label"><span>关系亲密</span><b>${pct(close)}%</b></div><div class="metric__track"><span class="metric__fill" style="width:${pct(close)}%"></span></div></div>
+  <div class="state-section"><div class="section-title">相处状态</div>
+    <div class="metric"><div class="metric__label"><span>亲密</span><b>${pct(close)}%</b></div><div class="metric__track"><span class="metric__fill" style="width:${pct(close)}%"></span></div></div>
     <div class="metric"><div class="metric__label"><span>信任</span><b>${pct(trust)}%</b></div><div class="metric__track"><span class="metric__fill metric__fill--ok" style="width:${pct(trust)}%"></span></div></div>
-    <div class="metric"><div class="metric__label"><span>接纳程度</span><b>${pct(acc)}%</b></div><div class="metric__track"><span class="metric__fill metric__fill--warm" style="width:${pct(acc)}%"></span></div></div>
+    <div class="metric"><div class="metric__label"><span>接纳</span><b>${pct(acc)}%</b></div><div class="metric__track"><span class="metric__fill metric__fill--warm" style="width:${pct(acc)}%"></span></div></div>
     <div class="metric"><div class="metric__label"><span>体力</span><b>${pct(stamina)}%</b></div><div class="metric__track"><span class="metric__fill" style="width:${pct(stamina)}%"></span></div></div></div>
   <div class="state-section"><div class="section-title">生命体征</div><div class="vitals">
     <div><span>心率</span><strong>${hr}</strong><small>次/分</small></div>
-    <div><span>衣物</span><strong style="font-size:14px">${clothing}</strong></div>
-    <div style="grid-column:1/-1"><span>此刻</span><span class="vitals__text">${timeLoc}</span></div>
-    <div style="grid-column:1/-1"><span>隐私</span><span class="vitals__text">${privacy}</span></div></div></div>
+    <div><span>疲劳</span><strong>${pct(fatigue)}</strong><small>%</small></div>
+    <div><span>隐私</span><span class="vitals__text">${privacy}</span></div>
+    <div><span>此刻</span><span class="vitals__text">${timeLoc}</span></div>
+    <div style="grid-column:1/-1"><span>衣物</span><span class="vitals__text">${clothing}</span></div></div></div>
   <div class="state-section"><div class="section-title">阶段标记</div><div class="chips">
     ${chips.length?chips.map(c=>`<span class="chip${c==='高潮中'?' chip--hot':''}">${esc(c)}</span>`).join(''):'<span class="chip">暂无</span>'}
   </div></div>`;
@@ -636,10 +637,14 @@ async function openWelcome(preChar){
   cwrap.querySelectorAll('label').forEach(l=>l.addEventListener('click',()=>{cwrap.querySelectorAll('label').forEach(x=>x.classList.remove('is-sel'));l.classList.add('is-sel');}));
   const swrap=$('wScen');
   try{SCENARIOS=await api('/api/scenarios');}catch(e){SCENARIOS=[];}
-  swrap.innerHTML=SCENARIOS.map((s,i)=>`<button type="button" class="scenario-opt${i===0?' is-sel':''}" data-sid="${esc(s.id)}">
+  // 每次随机抽取最多5个情景
+  const pool=SCENARIOS.slice();
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  const shown=pool.slice(0,5);
+  swrap.innerHTML=shown.map((s,i)=>`<label class="scenario-opt${i===0?' is-sel':''}" style="cursor:pointer">
     <input type="radio" name="wscen" value="${esc(s.id)}" ${i===0?'checked':''}>
-    <span><b>${esc(s.title)}</b><small>${esc(s.stage_name||s.stage||'')} · ${esc(s.location||'')}</small></span></button>`).join('')||'<div class="history-empty">无情景</div>';
-  swrap.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{swrap.querySelectorAll('button').forEach(x=>x.classList.remove('is-sel'));b.classList.add('is-sel');}));
+    <span><b>${esc(s.title)}</b><small>${esc(s.stage_name||s.stage||'')} · ${esc(s.location||'')}</small></span></label>`).join('')||'<div class="history-empty">无情景</div>';
+  swrap.querySelectorAll('label').forEach(l=>l.addEventListener('click',()=>{swrap.querySelectorAll('label').forEach(x=>x.classList.remove('is-sel'));l.classList.add('is-sel');}));
   $('wTrust').addEventListener('input',()=>$('wTrustV').textContent=Math.round($('wTrust').value*100)+'%');
   $('wClose').addEventListener('input',()=>$('wCloseV').textContent=Math.round($('wClose').value*100)+'%');
   $('wCancel').addEventListener('click',()=>w.remove());
