@@ -1192,6 +1192,67 @@ async def websocket_chat(websocket: WebSocket, session_id: str):
             await asyncio.gather(*pending, return_exceptions=True)
 
 
+# ====== 日志查看接口（轻量可视化）====== 
+import re as _re
+
+
+@app.get("/api/logs")
+async def list_logs(limit: int = 300, file: str = None, level: str = None,
+                    module: str = None, q: str = None):
+    """读取最新日志并返回结构化记录，供前端日志查看器实时刷新。"""
+    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    log_dir = os.path.join(base, "logs")
+    if file:
+        path = os.path.join(log_dir, file)
+        if not os.path.exists(path):
+            return StandardResponse(success=False, data={"error": "日志文件不存在", "file": file})
+    else:
+        if os.path.isdir(log_dir):
+            files = sorted(f for f in os.listdir(log_dir)
+                           if f.startswith("heartchat_") and f.endswith(".log"))
+        else:
+            files = []
+        path = os.path.join(log_dir, files[-1]) if files else None
+    if not path or not os.path.exists(path):
+        return StandardResponse(success=True, data={"file": "", "mtime": 0, "total": 0, "lines": [], "modules": []})
+    # 只读文件末尾一段（多行块 + 过滤），避免全量加载
+    tail_bytes = 2_000_000
+    with open(path, "rb") as fh:
+        fh.seek(0, os.SEEK_END)
+        size = fh.tell()
+        fh.seek(max(0, size - tail_bytes))
+        data = fh.read().decode("utf-8", errors="replace")
+    records = []
+    cur = None
+    pat = _re.compile(r"^\[([\d:.]+)\]\[ ?([\d.]+)s\]\[(\w+)\]\[([^\]]+)\] ?(.*)$")
+    for line in data.splitlines():
+        m = pat.match(line)
+        if m:
+            cur = {"ts": m.group(1), "uptime": m.group(2), "level": m.group(3),
+                   "module": m.group(4), "msg": m.group(5), "detail": []}
+            records.append(cur)
+        elif cur is not None and line.strip():
+            cur["detail"].append(line.rstrip())
+    all_modules = sorted({r["module"] for r in records})
+    if level:
+        records = [r for r in records if r["level"] == level.upper()]
+    if module:
+        records = [r for r in records if r["module"] == module]
+    if q:
+        ql = q.lower()
+        records = [r for r in records if ql in r["msg"].lower()
+                   or any(ql in d.lower() for d in r["detail"])]
+    total = len(records)
+    lines = records[-max(1, int(limit)):]
+    return StandardResponse(success=True, data={
+        "file": os.path.basename(path),
+        "mtime": os.path.getmtime(path),
+        "total": total,
+        "lines": lines,
+        "modules": all_modules,
+    })
+
+
 # ====== 启动入口 ======
 def start():
     import uvicorn

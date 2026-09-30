@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heart Chat · 运行日志</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23b58ff0'/%3E%3Cstop offset='1' stop-color='%23f09ad1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='24' height='24' rx='7' fill='url(%23g)'/%3E%3Cpath d='M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm2 5h10M7 12h10M7 16h6' stroke='%23fff' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f6f1f9; --ink:#3a3440; --ink2:#8b7f92; --line:rgba(157,123,216,.16);
+  --accent:#9d7bd8; --accent-soft:#efe8fb; --accent-softer:#f6f1fd;
+  --grad:linear-gradient(135deg,#b58ff0,#f09ad1); --shadow:0 4px 20px rgba(124,96,180,.10);
+  --sans:Inter,"Segoe UI","Microsoft YaHei",system-ui,sans-serif; --mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html,body{width:100%;height:100%;margin:0;color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+body{display:flex;flex-direction:column;background:radial-gradient(1100px 700px at 12% -6%,#fdf4ff 0,rgba(0,0,0,0) 55%),radial-gradient(900px 600px at 108% 6%,#f3ecfb 0,rgba(0,0,0,0) 50%),var(--bg)}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+h1,h2,h3,p{margin:0}
+/* 顶栏 */
+.head{flex:0 0 auto;padding:12px 18px;background:rgba(255,255,255,.72);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+.head-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-mark{display:grid;width:38px;height:38px;place-items:center;color:#fff;background:var(--grad);border-radius:14px;box-shadow:0 7px 16px rgba(157,123,216,.32)}
+.brand-mark svg{width:19px;height:19px}
+.brand h1{font-size:16px;letter-spacing:.01em}
+.brand small{display:block;margin-top:1px;color:var(--ink2);font-size:10.5px}
+.live{display:inline-flex;align-items:center;gap:7px;margin-left:auto;padding:6px 13px;font-size:12px;font-weight:650;color:var(--ink2);background:#fff;border:1px solid var(--line);border-radius:20px}
+.live.on{color:#4fae8a;border-color:#9ed8be;background:#eafaf2}
+.live i{width:9px;height:9px;border-radius:50%;background:#b3a6bf}
+.live.on i{background:#4fae8a;box-shadow:0 0 0 4px rgba(79,174,138,.2);animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.refresh{display:grid;width:38px;height:38px;place-items:center;color:var(--accent);border-radius:12px;background:var(--accent-softer)}
+.refresh:hover{background:var(--accent-soft)}
+.refresh svg{width:18px;height:18px}
+.refresh.spin svg{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.filters{display:flex;gap:9px;margin-top:10px;flex-wrap:wrap;align-items:center}
+.filters select,.filters input{height:36px;padding:0 12px;color:var(--ink);font-size:12.5px;background:#fff;border:1px solid #e2d7ef;border-radius:12px;outline:0}
+.filters select:focus,.filters input:focus{border-color:#c5a6ef;box-shadow:0 0 0 3px rgba(157,123,216,.12)}
+.filters input{flex:1;min-width:160px}
+.finfo{display:flex;align-items:center;gap:12px;margin-top:8px;color:var(--ink2);font-size:11px;flex-wrap:wrap}
+.finfo b{color:var(--ink);font-weight:650}
+/* 列表 */
+.list-wrap{flex:1;min-height:0;overflow-y:auto;padding:12px 14px;scrollbar-color:#cdbfdb transparent;scrollbar-width:thin}
+.ld{display:grid;grid-template-columns:78px 58px 88px minmax(0,1fr) auto;gap:10px;align-items:start;padding:7px 10px;border-radius:12px;border:1px solid transparent}
+.ld:hover{background:rgba(255,255,255,.55)}
+.ld+hr{margin:0;border:0;border-top:1px dashed #ebe3f3}
+.lts{color:#b0a3be;font-family:var(--mono);font-size:11px;white-space:nowrap}
+.lbadge{width:fit-content;padding:1px 8px;font-family:var(--mono);font-size:10px;font-weight:700;border-radius:8px;text-align:center}
+.lb-DEBUG{color:#8b8b96;background:#efeff3}
+.lb-INFO{color:#5b5b6a;background:#e9e9f0}
+.lb-OK{color:#2f9d77;background:#e3f6ee}
+.lb-WARN{color:#b57a1e;background:#fdf1d8}
+.lb-ERROR{color:#c04464;background:#fbe4ea}
+.lb-FATAL{color:#fff;background:#c0392b}
+.lb-TRACE{color:#7e5fc0;background:#efe8fb}
+.lmod{font-size:11px;font-weight:650;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lmsg{font-size:12.5px;line-height:1.55;overflow-wrap:anywhere;white-space:pre-wrap}
+.expand{display:grid;place-items:center;width:22px;height:22px;color:var(--ink2);border-radius:8px}
+.expand:hover{background:var(--accent-softer);color:var(--accent)}
+.expand svg{width:14px;height:14px;transition:transform .15s}
+.ld.open .expand svg{transform:rotate(90deg)}
+.ldetail{display:none;grid-column:1/-1;margin:5px 0 2px 8px;padding:8px 12px;font-family:var(--mono);font-size:11px;line-height:1.6;white-space:pre-wrap;color:#5b5063;background:#f7f2fb;border-left:3px solid #d8c6f0;border-radius:8px}
+.ld.open .ldetail{display:block}
+.empty{display:flex;align-items:center;justify-content:center;min-height:60vh;color:#a79bb3;font-size:13px}
+.leg{flex:0 0 auto;padding:6px 14px;color:var(--ink2);font-size:10.5px;background:rgba(255,255,255,.6);border-top:1px solid var(--line)}
+@media(max-width:760px){
+  .ld{grid-template-columns:64px 52px minmax(0,1fr) auto;gap:7px}
+  .lmod{grid-column:1/4;margin-top:-2px}
+  .lbadge{grid-row:1;grid-column:2}
+  .lts{grid-column:1}
+  .lmsg{grid-column:3}
+  .expand{grid-column:4;grid-row:1/3}
+}
+</style>
+</head>
+<body>
+<header class="head">
+  <div class="head-top">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="6"/><path d="M7 8h10M7 12h10M7 16h6"/></svg></div>
+      <div><h1>运行日志</h1><small>Heart Chat 详细运行轨迹</small></div>
+    </div>
+    <button class="live" id="liveBtn"><i></i><span>实时刷新</span></button>
+    <button class="refresh" id="refreshBtn" title="刷新">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7M21 3v6h-6"/></svg>
+    </button>
+  </div>
+  <div class="filters">
+    <select id="levelSel" title="级别">
+      <option value="">全部级别</option>
+      <option>DEBUG</option><option>INFO</option><option>OK</option>
+      <option>WARN</option><option>ERROR</option><option>FATAL</option><option>TRACE</option>
+    </select>
+    <select id="moduleSel" title="模块"><option value="">全部模块</option></select>
+    <input id="qInput" placeholder="关键词过滤（如：高潮 / prompt / anus）…">
+  </div>
+  <div class="finfo"><span>文件 <b id="fFile">—</b></span><span>记录 <b id="fTotal">0</b></span><span>更新 <b id="fMtime">—</b></span></div>
+</header>
+<main class="list-wrap" id="list"><div class="empty">加载日志…</div></main>
+<footer class="leg">点击含 ▸ 的行可展开 TRACE / 多行详情（完整 prompt、回复、状态快照）</footer>
+<script>
+const API='http://127.0.0.1:8000';
+const $=id=>document.getElementById(id);
+const S={on:false,timer:null,modules:new Set(),stuck:true};
+async function load(){
+  const p=new URLSearchParams({limit:'400',tail:'1'});
+  if($('levelSel').value)p.set('level',$('levelSel').value);
+  if($('moduleSel').value)p.set('module',$('moduleSel').value);
+  if($('qInput').value.trim())p.set('q',$('qInput').value.trim());
+  const wasBottom=$('list').scrollHeight-$('list').scrollTop-$('list').clientHeight<120;
+  $('refreshBtn').classList.add('spin');
+  try{
+    const r=await fetch(API+'/api/logs?'+p);const j=await r.json();
+    const d=(j.data||{}).lines||[];const meta=j.data||{};
+    if(meta.modules){meta.modules.forEach(m=>S.modules.add(m));fillModules();}
+    $('fFile').textContent=meta.file||'—';
+    $('fTotal').textContent=String(meta.total||0);
+    $('fMtime').textContent=meta.mtime?new Date(meta.mtime*1000).toLocaleTimeString('zh-CN'):'—';
+    render(d);
+    if(wasBottom||S.stuck)$('list').scrollTop=$('list').scrollHeight;
+  }catch(e){render([]);}
+  finally{$('refreshBtn').classList.remove('spin');}
+}
+function render(rows){
+  const el=$('list');
+  if(!rows.length){el.innerHTML='<div class="empty">暂无匹配的日志</div>';return;}
+  el.innerHTML=rows.map(r=>{
+    const has=r.detail&&r.detail.length;
+    const msg=r.msg||'';
+    const arrow=has?`<button class="expand" title="展开详情"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg></button>`:'<span style="width:22px"></span>';
+    const detail=has?`<div class="ldetail">${esc(r.detail.join('\\n'))}</div>`:'';
+    return `<div class="ld lb-row" data-raw>
+      <span class="lts">${esc(r.ts||'')}</span>
+      <span class="lbadge lb-${esc(r.level||'INFO')}">${esc(r.level||'INFO')}</span>
+      <span class="lmod">${esc(r.module||'')}</span>
+      <span class="lmsg">${esc(msg)}</span>${arrow}${detail}</div><hr>`;
+  }).join('');
+  el.querySelectorAll('.ld').forEach(n=>{
+    const b=n.querySelector('.expand');if(b)b.addEventListener('click',()=>n.classList.toggle('open'));
+  });
+}
+function fillModules(){
+  const sel=$('moduleSel');const cur=sel.value;
+  sel.innerHTML='<option value="">全部模块</option>'+[...S.modules].sort().map(m=>`<option${m===cur?' selected':''}>${esc(m)}</option>`).join('');
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function toggleLive(){S.on=!S.on;$('liveBtn').classList.toggle('on',S.on);
+  $('liveBtn').querySelector('span').textContent=S.on?'实时刷新中':'实时刷新';
+  if(S.on){S.timer=setInterval(load,2500);load();}else{clearInterval(S.timer);S.timer=null;}}
+$('liveBtn').addEventListener('click',toggleLive);
+$('refreshBtn').addEventListener('click',()=>load());
+$('levelSel').addEventListener('change',()=>load());
+$('moduleSel').addEventListener('change',()=>load());
+$('qInput').addEventListener('input',()=>{clearTimeout(S.dq);S.dq=setTimeout(load,350);});
+$('list').addEventListener('scroll',()=>{S.stuck=$('list').scrollHeight-$('list').scrollTop-$('list').clientHeight<120;});
+load();
+</script>
+</body>
+</html>
