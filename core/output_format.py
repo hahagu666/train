@@ -148,6 +148,36 @@ def _strip_echo(text: str, user_input: str = "") -> str:
     return value
 
 
+
+_SPEECH_MARK = re.compile(r"[?!？！]|……|吗|吧|呀|呢|好不好|要不要|可以吗|好吗|可否")
+_ACTION_FEEL = re.compile(r"揉|摸|伸进|贴|睁开|见你|抬起|闭上|抱住|搂|吻|握|蹭|抚|滑过|停顿|停留|颤抖|颤动|心跳|呼吸|酥麻|感受|感觉|期待|微微|泛|软软|温暖|温热|缩紧|迎|夹紧|低吟|喘息|发烫|泛红|悸动|等待|想")
+_PAREN_BLOCK = re.compile(r"(（[^（）]*）)")
+_SENT = re.compile(r"([^。！？!?……]+[。！？!?……]?)")
+
+def _bracket_non_dialogue(text: str) -> str:
+    """把括号外的非台词描写/感受句收进（ ）；台词（含语气词/问号/省略号）保留括号外。幂等。"""
+    if not text:
+        return text
+    out = []
+    for part in _PAREN_BLOCK.split(text):
+        if not part or part.startswith("（"):
+            out.append(part)
+            continue
+        for sent in _SENT.findall(part):
+            s = sent.strip()
+            if not s:
+                continue
+            if _SPEECH_MARK.search(s):
+                out.append(s)          # 台词：保留括号外
+            elif len(s) >= 4 and _ACTION_FEEL.search(s):
+                out.append("（" + s + "）")   # 描写/感受：收进括号
+            else:
+                if s in ("我", "你", "她", "他", "它"):
+                    continue          # 游离单字代词，删除
+                out.append(s)          # 无法确定：原样保留
+    return "".join(out)
+
+
 def normalize_character_output(text: str, user_input: str = "") -> str:
     """Return an idempotent character output with dialogue/narration separation."""
     debug("后处理", f"输出规范化开始: 长度={len(text)}字")
@@ -158,6 +188,7 @@ def normalize_character_output(text: str, user_input: str = "") -> str:
     value = _split_quoted_output(value)
     # A second mechanical pass makes mixed half/full-width input idempotent.
     value = _collapse_parentheses(value)
+    value = _bracket_non_dialogue(value)
     return value.strip()
 
 
