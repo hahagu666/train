@@ -489,7 +489,9 @@ function renderState(st){
   </div></div>`;
   $('stageChip').textContent=st.stage||'—';
 }
-function startPoll(sid){stopPoll();S.pollTimer=setInterval(async()=>{try{const d=await api('/api/sessions/'+sid+'/state');renderState(d.state);}catch(e){}},3000);}
+function startPoll(sid){stopPoll();S.pollTimer=setInterval(async()=>{try{const d=await api('/api/sessions/'+sid+'/state');renderState(d.state);}catch(e){
+  if(/404|not.?found/i.test(e.message||'')){stopPoll();const sb=$('stateBody');if(sb)sb.hidden=true;const se=$('stateEmpty');if(se){se.hidden=false;se.textContent='会话已失效，请从左侧重新选择';}}
+}},3000);}
 function stopPoll(){if(S.pollTimer){clearInterval(S.pollTimer);S.pollTimer=null;}}
 
 /* ================= 发送 ================= */
