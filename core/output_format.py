@@ -150,7 +150,7 @@ def _strip_echo(text: str, user_input: str = "") -> str:
 
 
 _SPEECH_MARK = re.compile(r"[?!？！]|……|吗|吧|呀|呢|好不好|要不要|可以吗|好吗|可否")
-_ACTION_FEEL = re.compile(r"揉|摸|伸进|贴|睁开|见你|抬起|闭上|抱住|搂|吻|握|蹭|抚|滑过|停顿|停留|颤抖|颤动|心跳|呼吸|酥麻|感受|感觉|期待|微微|泛|软软|温暖|温热|缩紧|迎|夹紧|低吟|喘息|发烫|泛红|悸动|等待|想")
+_ACTION_FEEL = re.compile(r"揉|摸|伸进|贴|睁开|见你|抬起|闭上|抱住|搂|吻|握|蹭|抚|滑过|停顿|停留|颤抖|颤动|心跳|呼吸|酥麻|感受|感觉|感到|期待|微微|泛|软软|温暖|温热|缩紧|迎|夹紧|低吟|喘息|发烫|泛红|悸动|等待|想|插|抽送|顶|含住|吸吮|吮|舔|脱|褪|揉捏|拨弄|进出|深入|起伏|顶弄|耸|磨|旋|送|撞|贯穿|环住|弓起|流水|呻吟|夹")
 _PAREN_BLOCK = re.compile(r"(（[^（）]*）)")
 _SENT = re.compile(r"([^。！？!?……]+[。！？!?……]?)")
 
@@ -172,7 +172,7 @@ def _bracket_non_dialogue(text: str) -> str:
             elif len(s) >= 4 and _ACTION_FEEL.search(s):
                 out.append("（" + s + "）")   # 描写/感受：收进括号
             else:
-                if s in ("我", "你", "她", "他", "它"):
+                if s in ("我", "你", "她", "他", "它", "时"):
                     continue          # 游离单字代词，删除
                 out.append(s)          # 无法确定：原样保留
     return "".join(out)
