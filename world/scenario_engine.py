@@ -290,18 +290,54 @@ class ScenarioCard:
         return "standing" if "站" in ctx else "sitting"
 
     def _infer_time_hour(self) -> int:
-        text = self.location + self.context
-        if any(k in text for k in ["深夜", "半夜", "凌晨", "午夜", "睡着", "做噩梦"]):
-            return random.choice([1, 2, 23])
-        if any(k in text for k in ["早上", "早起", "早餐", "上学", "赖床", "起晚"]):
-            return random.choice([7, 8])
-        if any(k in text for k in ["中午", "午饭", "午休"]):
-            return 12
-        if any(k in text for k in ["晚自习", "晚上", "晚自修", "吃完晚饭", "傍晚"]):
-            return random.choice([19, 20, 21])
-        if any(k in text for k in ["下午", "放学"]):
-            return random.choice([15, 16, 17])
-        return 22  # 默认晚上
+        text = self.location + self.context + self.title
+        _CN = {'一': 1, '二': 2, '两': 2, '三': 3, '四': 4, '五': 5,
+               '六': 6, '七': 7, '八': 8, '九': 9, '十': 10}
+        def cn2num(word):
+            if word == '十':
+                return 10
+            if word.startswith('十'):
+                return 10 + _CN.get(word[1], 0)
+            if word.endswith('十') and len(word) > 1:
+                return _CN.get(word[0], 1) * 10
+            return sum(_CN.get(c, 0) for c in word)
+        m = re.search(r"(\d{1,2})\s*[:：点]\s*(\d{1,2})?(?:半|多|左右)?", text)
+        explicit = int(m.group(1)) if m else None
+        if explicit is None:
+            cm = re.search(r"([一二两三四五六七八九十]{1,3})\s*点", text)
+            if cm:
+                explicit = cn2num(cm.group(1))
+        # 深夜X点：显式数字 <=3 为凌晨，>=7 为晚间（深夜十一点=23，深夜一点=1）
+        if "深夜" in text and explicit is not None:
+            return explicit if explicit <= 3 else (explicit + 12 if explicit < 12 else explicit)
+        # 时段词表：(关键词, 合理区间, 是否12小时制下午→+12)
+        DAY_PARTS = [
+            (("凌晨", "午夜", "半夜", "起夜", "半夜三更"), 0, 4, False),
+            (("早晨", "早上", "清晨", "早起", "赖床", "晨跑"), 5, 8, False),
+            (("上午", "早自习", "早读"), 7, 11, False),
+            (("中午", "午休", "午饭", "午餐"), 11, 13, False),
+            (("下午", "午后", "午睡"), 13, 17, True),
+            (("傍晚", "黄昏", "放学", "下课", "放学回家", "晚饭", "晚餐", "吃晚饭"), 16, 20, True),
+            (("晚上", "晚间", "夜里", "夜晚", "晚自习", "晚修", "睡前"), 19, 22, True),
+        ]
+        for keys, lo, hi, twelve in DAY_PARTS:
+            if any(k in text for k in keys):
+                if explicit is not None:
+                    h = explicit + 12 if (twelve and explicit < 12) else explicit
+                    return max(lo, min(hi, h))
+                return random.randint(lo, hi)
+        if explicit is not None:
+            return max(8, min(22, explicit))
+        # 白天活动：运动会/义卖/毕业照/扫墓/逛街等
+        if any(k in text for k in ("运动会", "体育会考", "体育课", "课间操", "义卖", "毕业照",
+                                   "拍毕业照", "扫墓", "清明", "逛街", "商场", "游乐场", "看电影",
+                                   "早操", "大扫除", "社会实践")):
+            return random.randint(9, 17)
+        # 校园/学习场景默认放学或白天时段
+        if self._infer_explicit_location() in ("school",):
+            return random.randint(9, 17)
+        # 现实 fallback：白天/傍晚，避免大半夜活跃对话
+        return random.randint(16, 20)
 
     def _infer_weekday(self) -> str:
         text = self.location + self.context + self.title

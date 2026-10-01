@@ -635,7 +635,7 @@ async def get_session(session_id: str):
     return {
         "meta": inst.meta.model_dump(),
         "state": snap.model_dump(),
-        "messages": inst.messages[-20:],
+        "messages": inst.messages,
         "scenario_id": inst.scenario_id,
         "snapshot_id": inst.current_snapshot_id,
         "timeline_id": inst.timeline_id,
@@ -1039,7 +1039,7 @@ async def chat_nonstream(req: ChatRequest, request: Request):
     return ChatResponse(
         response=result["response"],
         state=SessionStateSnapshot(**result["state"]),
-        messages=result.get("messages", inst.messages[-2:]),
+        messages=inst.messages,
         job_id=job.job_id,
         request_id=job.request_id,
     )
