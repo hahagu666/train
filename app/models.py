@@ -419,6 +419,7 @@ class SessionStateSnapshot(BaseModel):
     closeness: float = 0.0
     heart_rate: int = 72
     clothing: str = ""
+    clothing_layers: dict = {}
     time_str: str = ""
     location: str = "卧室"
     privacy: str = "私密"

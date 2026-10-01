@@ -246,6 +246,7 @@ class SessionInstance:
             closeness=round(self.meta.relationship_closeness if self.meta else 0.4, 2),
             heart_rate=hr,
             clothing=clothing_desc,
+            clothing_layers=s.clothing.layers_snapshot() if s and hasattr(s, 'clothing') and hasattr(s.clothing, 'layers_snapshot') else {},
             time_str=time_str,
             location=location,
             privacy=privacy,

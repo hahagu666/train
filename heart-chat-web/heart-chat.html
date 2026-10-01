@@ -150,18 +150,23 @@ a{color:var(--accent);text-decoration:none}
 .state-head{display:flex;align-items:center;justify-content:space-between;padding:0 18px}
 .state-head h2{font-size:14px;font-weight:700}
 .state-head .stage-chip{padding:3px 10px;color:#8a6ac9;font-size:11px;background:var(--accent-soft);border-radius:20px}
-.state-scroll{flex:1;min-height:0;overflow-y:auto;padding:16px;scrollbar-color:#cdbfdb transparent;scrollbar-width:thin}
-.state-section{padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid var(--line-2)}
+.state-scroll{flex:1;min-height:0;overflow-y:auto;padding:12px;scrollbar-color:#cdbfdb transparent;scrollbar-width:thin}
+.state-section{padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--line-2)}
 .state-section:last-child{border-bottom:0;margin-bottom:0}
-.section-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;color:#382f3f;font-size:13px;font-weight:700}
-.gauge-wrap{display:flex;align-items:center;gap:14px}
-.gauge{position:relative;width:118px;height:118px;flex:0 0 118px}
+.section-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;color:#382f3f;font-size:13px;font-weight:700}
+.gauge-wrap{display:flex;align-items:center;gap:12px}
+.gauge{position:relative;width:96px;height:96px;flex:0 0 96px}
 .gauge svg{transform:rotate(-90deg)}
 .gauge .g-num{position:absolute;inset:0;display:grid;place-items:center;flex-direction:column}
-.gauge .g-num strong{font-size:26px;font-family:var(--serif);line-height:1}
-.gauge .g-num small{color:var(--ink2);font-size:10px;margin-top:2px}
+.gauge .g-num strong{font-size:22px;font-family:var(--serif);line-height:1}
+.gauge .g-num small{color:var(--ink2);font-size:9px;margin-top:2px}
 .gauge-legend{flex:1;min-width:0}
 .gauge-legend p{color:var(--ink2);font-size:11.5px;line-height:1.6}
+.cloth-list{overflow:hidden;background:rgba(255,255,255,.55);border:1px solid var(--line-2);border-radius:16px}
+.cloth-row{display:grid;grid-template-columns:76px minmax(0,1fr);gap:10px;padding:8px 12px;border-bottom:1px dashed #e9dff4}
+.cloth-row:last-child{border-bottom:0}
+.cloth-label{color:#94879e;font-size:11px;font-weight:650;padding-top:1px}
+.cloth-val{color:#5b5063;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
 .metric{margin-bottom:12px}
 .metric__label{display:flex;justify-content:space-between;margin-bottom:6px;color:var(--ink2);font-size:11.5px}
 .metric__label b{color:var(--ink);font-weight:700}
@@ -458,35 +463,41 @@ function renderState(st){
   const phase=PHASE_CN[st.phase]||st.phase||'—',emo=esc(st.emotion||'—');
   const privacy=PRIVACY_CN[st.privacy]||st.privacy||'—',clothing=esc(st.clothing||'—');
   const timeLoc=esc((st.time_str||'')+' · '+(st.location||''));
-  const arc=2*Math.PI*52,fill=arc*pct(a);
+  const arc=2*Math.PI*42,fill=arc*pct(a);
+  // 动态状态徽章（只保留有实时警示价值的信息）
   const chips=[];
-  if(st.relationship_stage)chips.push(st.relationship_stage);
-  if(st.scenario_stage)chips.push(st.scenario_stage);
-  if(st.is_orgasm)chips.push('高潮中');
-  if(st.is_interrupted)chips.push('被中断');
-  if(st.has_people||st.others_present)chips.push('有旁人在场');
-  if(st.privacy_level!=null&&st.privacy_level<0.4)chips.push('高暴露风险');
+  if(st.is_orgasm)chips.push(['高潮中',1]);
+  if(st.is_interrupted)chips.push(['被中断',1]);
+  if(st.has_people||st.others_present)chips.push(['有旁人在场',1]);
+  if(st.privacy_level!=null&&st.privacy_level<0.4)chips.push(['高暴露风险',0]);
+  // 衣物四层（随剧情卡初始 + 用户/模型输入语义实时变化）
+  const L=st.clothing_layers||{};
+  const layerDef=[['上半身外层','upper_outer'],['上半身内层','upper_inner'],['下半身外层','lower_outer'],['下半身内层','lower_inner']];
+  const clothHtml=layerDef.map(([label,key])=>{
+    const items=L[key]||[];
+    const txt=items.length?items.map(it=>it.removed?'已脱掉':(it.name+(it.state==='穿着'?'':`（${it.state}）`))).join('、'):'未穿着';
+    return `<div class="cloth-row"><span class="cloth-label">${label}</span><span class="cloth-val">${esc(txt)}</span></div>`;
+  }).join('');
   body.innerHTML=`
   <div class="state-section"><div class="gauge-wrap">
-    <div class="gauge"><svg width="118" height="118" viewBox="0 0 118 118">
-      <circle cx="59" cy="59" r="52" fill="none" stroke="#ece4f3" stroke-width="10"/>
-      <circle cx="59" cy="59" r="52" fill="none" stroke="url(#gaugeGrad)" stroke-width="10" stroke-linecap="round" stroke-dasharray="${fill.toFixed(1)} ${arc.toFixed(1)}"/></svg>
-      <div class="g-num"><strong>${pct(a)}</strong><small>兴奋度</small></div></div>
+    <div class="gauge"><svg width="96" height="96" viewBox="0 0 96 96">
+      <circle cx="48" cy="48" r="42" fill="none" stroke="#ece4f3" stroke-width="9"/>
+      <circle cx="48" cy="48" r="42" fill="none" stroke="url(#gaugeGrad)" stroke-width="9" stroke-linecap="round" stroke-dasharray="${fill.toFixed(1)} ${arc.toFixed(1)}"/></svg>
+      <div class="g-num"><strong>${pct(a)}</strong><small>兴奋</small></div></div>
     <div class="gauge-legend"><p><b>${phase}</b> · ${emo}</p><p>${esc(st.emotion_detail||'')}</p></div></div></div>
   <div class="state-section"><div class="section-title">相处状态</div>
     <div class="metric"><div class="metric__label"><span>亲密</span><b>${pct(close)}%</b></div><div class="metric__track"><span class="metric__fill" style="width:${pct(close)}%"></span></div></div>
     <div class="metric"><div class="metric__label"><span>信任</span><b>${pct(trust)}%</b></div><div class="metric__track"><span class="metric__fill metric__fill--ok" style="width:${pct(trust)}%"></span></div></div>
     <div class="metric"><div class="metric__label"><span>接纳</span><b>${pct(acc)}%</b></div><div class="metric__track"><span class="metric__fill metric__fill--warm" style="width:${pct(acc)}%"></span></div></div>
     <div class="metric"><div class="metric__label"><span>体力</span><b>${pct(stamina)}%</b></div><div class="metric__track"><span class="metric__fill" style="width:${pct(stamina)}%"></span></div></div></div>
+  <div class="state-section"><div class="section-title">衣物</div><div class="cloth-list">${clothHtml}</div></div>
   <div class="state-section"><div class="section-title">生命体征</div><div class="vitals">
     <div><span>心率</span><strong>${hr}</strong><small>次/分</small></div>
     <div><span>疲劳</span><strong>${pct(fatigue)}</strong><small>%</small></div>
     <div><span>隐私</span><span class="vitals__text">${privacy}</span></div>
-    <div><span>此刻</span><span class="vitals__text">${timeLoc}</span></div>
-    <div style="grid-column:1/-1"><span>衣物</span><span class="vitals__text">${clothing}</span></div></div></div>
-  <div class="state-section"><div class="section-title">阶段标记</div><div class="chips">
-    ${chips.length?chips.map(c=>`<span class="chip${c==='高潮中'?' chip--hot':''}">${esc(c)}</span>`).join(''):'<span class="chip">暂无</span>'}
-  </div></div>`;
+    <div><span>时间</span><span class="vitals__text">${esc(st.time_str||'—')}</span></div>
+    <div><span>地点</span><span class="vitals__text">${esc(st.location||'—')}</span></div></div></div>
+  ${chips.length?`<div class="state-section"><div class="section-title">实时状态</div><div class="chips">${chips.map(([c,hot])=>`<span class="chip${hot?' chip--hot':''}">${esc(c)}</span>`).join('')}</div></div>`:''}`;
   $('stageChip').textContent=st.stage||'—';
 }
 function startPoll(sid){stopPoll();S.pollTimer=setInterval(async()=>{try{const d=await api('/api/sessions/'+sid+'/state');renderState(d.state);}catch(e){

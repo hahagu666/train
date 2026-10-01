@@ -540,6 +540,42 @@ class ClothingSystem:
             parts.append("，".join(pushed))
         return "".join(parts) if parts else "衣着整齐"
 
+    def layers_snapshot(self) -> dict:
+        """按四层分组返回当前衣物与状态，供前端分格展示。
+        分组：upper_outer(上半身外层)/upper_inner(上半身内层)/
+              lower_outer(下半身外层)/lower_inner(下半身内层)/others(配饰)
+        """
+        state_cn = {
+            "worn": "穿着", "unfastened": "解开", "pushed_aside": "掀开",
+            "pulled_down": "拉下", "partially_removed": "脱一半", "removed": "脱掉",
+        }
+        layers = {"upper_outer": [], "upper_inner": [], "lower_outer": [], "lower_inner": [], "others": []}
+        for g in sorted(self.garments.values(), key=lambda g: g.layer):
+            item = {
+                "name": g.name,
+                "state": state_cn.get(g.state_label(), g.state_label()),
+                "progress": round(g.state_progress, 2),
+                "removed": g.is_removed(),
+            }
+            cov = g.covers
+            covered_upper = any(p in cov for p in
+                                ["chest", "nipple_left", "nipple_right", "breast_left",
+                                 "breast_right", "shoulders", "back", "belly"])
+            covered_lower = any(p in cov for p in
+                                ["crotch", "genital_female", "clitoris", "vaginal_vestibule",
+                                 "buttocks", "thighs", "hips", "waist"])
+            if covered_upper and g.layer <= 2:
+                layers["upper_outer"].append(item)
+            elif g.layer == 4:
+                layers["upper_inner"].append(item)
+            elif covered_lower and g.layer == 3:
+                layers["lower_outer"].append(item)
+            elif g.layer == 5:
+                layers["lower_inner"].append(item)
+            else:
+                layers["others"].append(item)
+        return layers
+
     def to_dict(self) -> dict:
         return {
             "base_outfit": self.base_outfit,
